@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   if (!supabase) return NextResponse.json([])
 
   const { data, error } = await supabase
-    .from('prospects')
+    .from('jrv_prospects')
     .select('*')
     .order('created_at', { ascending: false })
     .limit(limit)
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     const newThisWeek = prospects.filter(p => new Date(p.created_at) > weekAgo).length
 
     // MRR from clients table (fallback to 0)
-    const { data: clientsData } = await supabase.from('clients').select('monthly_fee').eq('active', true)
+    const { data: clientsData } = await supabase.from('jrv_clients').select('monthly_fee').eq('active', true)
     const mrr = (clientsData ?? []).reduce((sum: number, c: any) => sum + (c.monthly_fee ?? 0), 0)
 
     const total      = prospects.length
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
   if (!supabase) return NextResponse.json({ error: 'DB non configurée' }, { status: 503 })
 
   const { data, error } = await supabase
-    .from('prospects')
+    .from('jrv_prospects')
     .insert({
       name:     name.trim(),
       company:  company?.trim() ?? null,
@@ -96,13 +96,13 @@ export async function PATCH(req: NextRequest) {
   if (status) updates.status = status
 
   if (note) {
-    const { data: current } = await supabase.from('prospects').select('notes').eq('id', id).single()
+    const { data: current } = await supabase.from('jrv_prospects').select('notes').eq('id', id).single()
     const existing = (current?.notes ?? []) as any[]
     updates.notes = [...existing, { text: note, date: new Date().toISOString() }]
   }
 
   const { data, error } = await supabase
-    .from('prospects').update(updates).eq('id', id).select().single()
+    .from('jrv_prospects').update(updates).eq('id', id).select().single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)

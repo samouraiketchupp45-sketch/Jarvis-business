@@ -1,10 +1,11 @@
--- ═══════════════════════════════════════════════════════════
--- JARVIS BUSINESS — Schema Supabase
--- Coller dans Supabase SQL Editor et cliquer Run
--- ═══════════════════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════
+-- JARVIS BUSINESS — Tables Supabase (préfixe jrv_)
+-- Compatible avec le projet Supabase Exoticz existant
+-- Coller dans : https://supabase.com/dashboard/project/rgjvkxenwtnfllakjvza/sql/new
+-- ═══════════════════════════════════════════════════════
 
--- 1. Prospects
-CREATE TABLE IF NOT EXISTS prospects (
+-- 1. Prospects / Leads
+CREATE TABLE IF NOT EXISTS jrv_prospects (
   id          uuid    DEFAULT gen_random_uuid() PRIMARY KEY,
   name        text    NOT NULL,
   company     text,
@@ -19,8 +20,8 @@ CREATE TABLE IF NOT EXISTS prospects (
   updated_at  timestamptz DEFAULT now()
 );
 
--- 2. Clients actifs
-CREATE TABLE IF NOT EXISTS clients (
+-- 2. Clients actifs (abonnements)
+CREATE TABLE IF NOT EXISTS jrv_clients (
   id          uuid    DEFAULT gen_random_uuid() PRIMARY KEY,
   name        text    NOT NULL,
   company     text,
@@ -29,13 +30,14 @@ CREATE TABLE IF NOT EXISTS clients (
   monthly_fee int     DEFAULT 0,
   active      boolean DEFAULT true,
   start_date  timestamptz DEFAULT now(),
+  notes       text,
   created_at  timestamptz DEFAULT now()
 );
 
--- 3. Devis
-CREATE TABLE IF NOT EXISTS devis (
+-- 3. Devis générés
+CREATE TABLE IF NOT EXISTS jrv_devis (
   id           uuid    DEFAULT gen_random_uuid() PRIMARY KEY,
-  prospect_id  uuid    REFERENCES prospects(id),
+  prospect_id  uuid    REFERENCES jrv_prospects(id) ON DELETE SET NULL,
   client_name  text    NOT NULL,
   company      text,
   services     jsonb   DEFAULT '[]',
@@ -46,12 +48,14 @@ CREATE TABLE IF NOT EXISTS devis (
   created_at   timestamptz DEFAULT now()
 );
 
--- 4. Index pour les performances
-CREATE INDEX IF NOT EXISTS idx_prospects_status ON prospects(status);
-CREATE INDEX IF NOT EXISTS idx_prospects_created ON prospects(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_clients_active ON clients(active);
+-- Index
+CREATE INDEX IF NOT EXISTS idx_jrv_prospects_status  ON jrv_prospects(status);
+CREATE INDEX IF NOT EXISTS idx_jrv_prospects_created ON jrv_prospects(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_jrv_clients_active    ON jrv_clients(active);
 
--- 5. RLS — Désactivé (accès via service role key uniquement)
-ALTER TABLE prospects     DISABLE ROW LEVEL SECURITY;
-ALTER TABLE clients       DISABLE ROW LEVEL SECURITY;
-ALTER TABLE devis         DISABLE ROW LEVEL SECURITY;
+-- Désactiver RLS (accès via service role key côté serveur uniquement)
+ALTER TABLE jrv_prospects DISABLE ROW LEVEL SECURITY;
+ALTER TABLE jrv_clients   DISABLE ROW LEVEL SECURITY;
+ALTER TABLE jrv_devis     DISABLE ROW LEVEL SECURITY;
+
+SELECT 'JARVIS BUSINESS — Tables créées avec succès ✅' as status;
