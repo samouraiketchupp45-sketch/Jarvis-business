@@ -122,15 +122,20 @@ export async function POST(req: NextRequest) {
 
   console.log('[PROSPECTS POST] ✅ Prospect enregistré — id:', data.id)
 
-  // Notifier admin Telegram (non-bloquant)
-  notifyNewProspect({
-    id:                  data.id,
-    activity:            data.activity,
-    project_description: data.project_description,
-    telegram:            data.telegram,
-    features:            data.features ?? null,
-    wants_maintenance:   data.wants_maintenance,
-  }).catch(e => console.error('[PROSPECTS POST] Telegram notify error:', e?.message))
+  // Notifier admin Telegram — AWAITÉ pour que Vercel ne coupe pas avant l'envoi
+  try {
+    await notifyNewProspect({
+      id:                  data.id,
+      activity:            data.activity,
+      project_description: data.project_description,
+      telegram:            data.telegram,
+      features:            data.features ?? null,
+      wants_maintenance:   data.wants_maintenance,
+    })
+    console.log('[PROSPECTS POST] ✅ Notification Telegram envoyée')
+  } catch (e: any) {
+    console.error('[PROSPECTS POST] Telegram notify error:', e?.message)
+  }
 
   return NextResponse.json(data, { status: 201 })
 }
