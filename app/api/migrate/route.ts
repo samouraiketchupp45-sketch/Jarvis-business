@@ -50,6 +50,11 @@ export async function GET() {
     `ALTER TABLE jrv_prospects ADD COLUMN IF NOT EXISTS project_description text`,
     `ALTER TABLE jrv_prospects ADD COLUMN IF NOT EXISTS features text`,
     `ALTER TABLE jrv_prospects ADD COLUMN IF NOT EXISTS wants_maintenance boolean DEFAULT false`,
+    // Colonnes Telegram WebApp
+    `ALTER TABLE jrv_prospects ADD COLUMN IF NOT EXISTS telegram_id bigint`,
+    `ALTER TABLE jrv_prospects ADD COLUMN IF NOT EXISTS telegram_username text`,
+    `ALTER TABLE jrv_prospects ADD COLUMN IF NOT EXISTS telegram_first_name text`,
+    `ALTER TABLE jrv_prospects ADD COLUMN IF NOT EXISTS telegram_last_name text`,
     `ALTER TABLE jrv_clients ADD COLUMN IF NOT EXISTS hosting_active boolean DEFAULT true`,
     `ALTER TABLE jrv_clients ADD COLUMN IF NOT EXISTS maintenance_active boolean DEFAULT false`,
     `ALTER TABLE jrv_clients ADD COLUMN IF NOT EXISTS project_url text`,
