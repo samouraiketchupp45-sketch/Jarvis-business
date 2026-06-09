@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Check, Send, Loader, Star, Zap, Shield, Clock, Headphones } from 'lucide-react'
+import { Check, Send, Loader, Star, Zap, Shield, Clock, Headphones, Home } from 'lucide-react'
 
 // ─── Contenu du pack ──────────────────────────────────────────────────────────
 const PACK_ITEMS = [
@@ -257,74 +257,221 @@ function ContactForm({
   )
 }
 
+// ─── Confettis ────────────────────────────────────────────────────────────────
+const CONFETTI_COLORS = ['#3b82f6', '#a855f7', '#22d3ee', '#f59e0b', '#10b981', '#ec4899']
+
+function Confetti() {
+  const pieces = Array.from({ length: 28 }, (_, i) => ({
+    id: i,
+    color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+    x: Math.random() * 100,
+    delay: Math.random() * 0.6,
+    duration: 1.8 + Math.random() * 1.2,
+    size: 5 + Math.random() * 6,
+    rotate: Math.random() * 360,
+  }))
+
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ borderRadius: 'inherit' }}>
+      {pieces.map(p => (
+        <motion.div
+          key={p.id}
+          initial={{ y: -10, x: `${p.x}vw`, opacity: 1, rotate: 0, scale: 1 }}
+          animate={{ y: '110vh', opacity: 0, rotate: p.rotate, scale: 0.5 }}
+          transition={{ duration: p.duration, delay: p.delay, ease: 'easeIn' }}
+          style={{
+            position: 'fixed',
+            top: 0,
+            width: p.size,
+            height: p.size * 0.5,
+            borderRadius: 2,
+            background: p.color,
+            zIndex: 100,
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
+// ─── Checkmark SVG animé ──────────────────────────────────────────────────────
+function AnimatedCheck() {
+  return (
+    <motion.svg
+      width="40" height="40" viewBox="0 0 40 40" fill="none"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 0.3 }}
+    >
+      <motion.path
+        d="M8 20 L17 29 L32 12"
+        stroke="#60a5fa"
+        strokeWidth="3.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        transition={{ delay: 0.5, duration: 0.5, ease: 'easeOut' }}
+      />
+    </motion.svg>
+  )
+}
+
 // ─── Success ──────────────────────────────────────────────────────────────────
+const TG_USERNAME = 'ApplyaaBot'
+const TG_MESSAGE = encodeURIComponent(
+  'Bonjour, je viens de faire une demande sur ApplyaaBot concernant le Pack Complet à 1200€.'
+)
+const TG_URL = `https://t.me/${TG_USERNAME}?text=${TG_MESSAGE}`
+
 function SuccessScreen() {
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-      className="w-full max-w-sm mx-auto text-center py-12"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="w-full max-w-sm mx-auto text-center relative"
+      style={{ paddingTop: 8 }}
     >
+      <Confetti />
+
+      {/* Check circle */}
       <motion.div
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ delay: 0.2, type: 'spring', stiffness: 400, damping: 20 }}
-        className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ delay: 0.1, type: 'spring', stiffness: 350, damping: 22 }}
+        className="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 relative"
         style={{
-          background: 'linear-gradient(135deg, rgba(59,130,246,0.2), rgba(168,85,247,0.2))',
-          border: '2px solid rgba(59,130,246,0.5)',
-          boxShadow: '0 0 40px rgba(59,130,246,0.25)',
+          background: 'linear-gradient(135deg, rgba(59,130,246,0.15), rgba(168,85,247,0.15))',
+          border: '2px solid rgba(59,130,246,0.45)',
+          boxShadow: '0 0 0 12px rgba(59,130,246,0.06), 0 0 60px rgba(59,130,246,0.2)',
         }}
       >
-        <Check size={36} className="text-blue-400" strokeWidth={3} />
+        {/* Pulse ring */}
+        <motion.div
+          className="absolute inset-0 rounded-full"
+          style={{ border: '2px solid rgba(59,130,246,0.3)' }}
+          animate={{ scale: [1, 1.3, 1.3], opacity: [0.8, 0, 0] }}
+          transition={{ delay: 0.6, duration: 1.2, repeat: 2 }}
+        />
+        <AnimatedCheck />
       </motion.div>
 
+      {/* Title */}
       <motion.h2
-        initial={{ opacity: 0, y: 15 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="text-2xl font-black text-white mb-3"
+        transition={{ delay: 0.45, type: 'spring', stiffness: 300, damping: 24 }}
+        className="text-2xl font-black text-white mb-3 tracking-tight"
       >
         Demande envoyée !
       </motion.h2>
 
+      {/* Subtitle */}
+      <motion.p
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+        className="text-sm leading-relaxed mb-2"
+        style={{ color: 'rgba(255,255,255,0.5)' }}
+      >
+        Merci pour votre confiance. Nous étudions votre projet et revenons
+        vers vous rapidement afin de vous accompagner dans sa réalisation.
+      </motion.p>
+
       <motion.p
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.55 }}
-        className="text-sm text-white/50 leading-relaxed mb-8"
+        transition={{ delay: 0.72 }}
+        className="text-xs font-semibold mb-7"
+        style={{ color: 'rgba(255,255,255,0.3)' }}
       >
-        On revient vers vous sur Telegram{' '}
-        <span className="text-blue-400 font-semibold">dans les 2 heures</span>
-        {' '}pour valider votre projet et démarrer.
+        ⏱️ Réponse généralement sous 2 heures
       </motion.p>
 
+      {/* Pack recap card */}
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7 }}
-        className="p-4 rounded-2xl mb-6 text-left"
-        style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)' }}
-      >
-        <p className="text-xs font-bold text-blue-400 mb-2">🚀 Pack COMPLET — 1 200€</p>
-        <p className="text-xs text-white/40">Bot + Mini App + Panel Admin · Livré en 48h</p>
-      </motion.div>
-
-      <motion.a
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.85 }}
-        href="https://t.me/ApplyaaBot"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold text-white"
+        transition={{ delay: 0.82, type: 'spring', stiffness: 280, damping: 26 }}
+        className="rounded-2xl p-4 mb-6 text-left relative overflow-hidden"
         style={{
-          background: 'linear-gradient(135deg, #3b82f6, #7c3aed)',
-          boxShadow: '0 4px 20px rgba(59,130,246,0.3)',
+          background: 'linear-gradient(135deg, rgba(59,130,246,0.07), rgba(168,85,247,0.07))',
+          border: '1px solid rgba(59,130,246,0.2)',
+          boxShadow: '0 0 30px rgba(59,130,246,0.06)',
         }}
       >
-        💬 Nous contacter sur Telegram
+        {/* top line glow */}
+        <div style={{
+          position: 'absolute', top: 0, left: '30%', right: '30%', height: 1,
+          background: 'linear-gradient(90deg, transparent, rgba(96,165,250,0.6), transparent)',
+        }} />
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
+            style={{ background: 'linear-gradient(135deg, #3b82f6, #7c3aed)' }}>
+            🚀
+          </div>
+          <div>
+            <p className="text-xs font-black text-white tracking-wide">PACK COMPLET</p>
+            <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Bot Telegram · Mini App · Panel Admin</p>
+          </div>
+          <span className="ml-auto text-lg font-black" style={{ color: '#60a5fa' }}>1 200€</span>
+        </div>
+        <div className="flex items-center gap-2 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <Clock size={11} className="text-blue-400/60 flex-shrink-0" />
+          <span className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Livraison : 48h à 7 jours · Configuration intégrale incluse</span>
+        </div>
+      </motion.div>
+
+      {/* Primary CTA — Telegram */}
+      <motion.a
+        href={TG_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        initial={{ opacity: 0, y: 16, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ delay: 1, type: 'spring', stiffness: 300, damping: 22 }}
+        whileHover={{ scale: 1.03, boxShadow: '0 12px 48px rgba(59,130,246,0.5)' }}
+        whileTap={{ scale: 0.97 }}
+        className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl font-black text-white text-base mb-3 relative overflow-hidden"
+        style={{
+          background: 'linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%)',
+          boxShadow: '0 8px 36px rgba(59,130,246,0.38)',
+          textDecoration: 'none',
+        }}
+      >
+        {/* Shine sweep */}
+        <motion.div
+          className="absolute inset-0"
+          style={{
+            background: 'linear-gradient(105deg, transparent 35%, rgba(255,255,255,0.12) 50%, transparent 65%)',
+          }}
+          animate={{ x: ['-100%', '200%'] }}
+          transition={{ delay: 1.3, duration: 1.2, repeat: Infinity, repeatDelay: 3 }}
+        />
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="white" className="relative z-10 flex-shrink-0">
+          <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.88 13.47l-2.967-.924c-.643-.204-.657-.643.136-.953l11.57-4.46c.537-.194 1.006.131.834.944z"/>
+        </svg>
+        <span className="relative z-10">💬 Contacter @{TG_USERNAME}</span>
+      </motion.a>
+
+      {/* Secondary — back home */}
+      <motion.a
+        href="/"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.2 }}
+        whileTap={{ scale: 0.97 }}
+        className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl text-sm font-semibold transition-colors"
+        style={{
+          background: 'rgba(255,255,255,0.04)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          color: 'rgba(255,255,255,0.4)',
+          textDecoration: 'none',
+        }}
+      >
+        🏠 Retour à l'accueil
       </motion.a>
     </motion.div>
   )
