@@ -84,16 +84,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Base de données non configurée. Contactez l\'administrateur.' }, { status: 503 })
   }
 
+  const activityVal = (activity ?? 'Pack Complet 1200€').trim()
+  const telegramVal = (telegram ?? name ?? 'Non renseigné').trim()
+
   const insertData: Record<string, unknown> = {
-    activity:            (activity ?? 'Pack Complet 1200€').trim(),
+    activity:            activityVal,
     project_description: project_description.trim(),
-    telegram:            (telegram ?? name ?? 'Non renseigné').trim(),
+    telegram:            telegramVal,
     features:            features ? String(features).trim() : null,
     wants_maintenance:   Boolean(wants_maintenance),
     status:              'NOUVEAU',
     notes:               [],
-    // champs rétrocompat
+    // colonnes rétrocompat (NOT NULL dans l'ancienne table)
     name:                (name ?? telegram ?? 'Prospect').trim(),
+    company:             activityVal,
+    service:             activityVal,
     budget:              budget ?? '1200',
     message:             project_description.trim(),
   }
