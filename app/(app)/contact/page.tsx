@@ -168,11 +168,12 @@ function PackCard({ onContinue }: { onContinue: () => void }) {
 type FormData = { description: string }
 
 function ContactForm({
-  form, setForm, loading, onSubmit,
+  form, setForm, loading, apiError, onSubmit,
 }: {
   form: FormData
   setForm: (f: FormData) => void
   loading: boolean
+  apiError: string | null
   onSubmit: () => void
 }) {
   const valid = form.description.length >= 10
@@ -249,6 +250,19 @@ function ContactForm({
           </>
         )}
       </motion.button>
+
+      {/* Erreur API */}
+      {apiError && (
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4 p-3 rounded-2xl flex items-start gap-2"
+          style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)' }}
+        >
+          <span className="text-red-400 text-sm flex-shrink-0 mt-0.5">⚠️</span>
+          <p className="text-xs text-red-300 leading-relaxed">{apiError}</p>
+        </motion.div>
+      )}
 
       <p className="text-center text-[10px] text-white/20 mt-3">
         Aucun paiement maintenant · Réponse garantie sous 2h
@@ -481,27 +495,41 @@ function SuccessScreen() {
 type Step = 'pack' | 'form' | 'success'
 
 export default function ContactPage() {
-  const [step, setStep] = useState<Step>('pack')
+  const [step, setStep]       = useState<Step>('pack')
   const [loading, setLoading] = useState(false)
-  const [form, setForm] = useState<FormData>({ description: '' })
+  const [apiError, setApiError] = useState<string | null>(null)
+  const [form, setForm]       = useState<FormData>({ description: '' })
 
   const handleSubmit = async () => {
     setLoading(true)
+    setApiError(null)
     try {
-      await fetch('/api/prospects', {
+      const res = await fetch('/api/prospects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           project_description: form.description,
+          activity: 'Pack Complet 1200€',
           budget: '1200',
           pack: 'complet',
         }),
       })
-    } catch {
-      // silent
+
+      const json = await res.json().catch(() => ({}))
+
+      if (!res.ok) {
+        // Afficher l'erreur réelle — jamais afficher "Demande envoyée" si ça a échoué
+        const msg = json?.error ?? `Erreur serveur (${res.status})`
+        setApiError(msg)
+        return
+      }
+
+      // Succès réel confirmé par le serveur
+      setStep('success')
+    } catch (err: any) {
+      setApiError('Erreur réseau — vérifiez votre connexion et réessayez.')
     } finally {
       setLoading(false)
-      setStep('success')
     }
   }
 
@@ -539,6 +567,7 @@ export default function ContactPage() {
             form={form}
             setForm={setForm}
             loading={loading}
+            apiError={apiError}
             onSubmit={handleSubmit}
           />
         )}
