@@ -8,82 +8,115 @@ export const dynamic = 'force-dynamic'
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const isStats = searchParams.get('stats') === '1'
-  const limit   = parseInt(searchParams.get('limit') ?? '50')
+  const status  = searchParams.get('status') ?? null
+  const limit   = parseInt(searchParams.get('limit') ?? '100')
 
   const supabase = createServiceClient()
   if (!supabase) return NextResponse.json([])
 
-  const { data, error } = await supabase
+  let query = supabase
     .from('jrv_prospects')
     .select('*')
     .order('created_at', { ascending: false })
     .limit(limit)
 
+  if (status) query = query.eq('status', status)
+
+  const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   if (isStats) {
-    const prospects = data ?? []
-    const clients   = prospects.filter(p => p.status === 'GAGNE')
-    const now       = new Date()
-    const weekAgo   = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-    const newThisWeek = prospects.filter(p => new Date(p.created_at) > weekAgo).length
+    const list       = data ?? []
+    const now        = new Date()
+    const weekAgo    = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    const newThisWeek = list.filter((p: any) => new Date(p.created_at) > weekAgo).length
+    const total      = list.length
+    const accepted   = list.filter((p: any) => ['ACCEPTE','EN_COURS','LIVRE'].includes(p.status)).length
+    const conversion = total > 0 ? Math.round(accepted / total * 100) : 0
+    const pending    = list.filter((p: any) => p.status === 'NOUVEAU').length
+    const inProgress = list.filter((p: any) => p.status === 'EN_COURS').length
+    const maintenance = list.filter((p: any) => p.wants_maintenance && p.status === 'LIVRE').length
 
-    // MRR from clients table (fallback to 0)
-    const { data: clientsData } = await supabase.from('jrv_clients').select('monthly_fee').eq('active', true)
-    const mrr = (clientsData ?? []).reduce((sum: number, c: any) => sum + (c.monthly_fee ?? 0), 0)
+    // MRR = hébergements actifs × 15 + maintenances actives × 50
+    let clients: any[] | null = null
+    try {
+      const r = await supabase.from('jrv_clients').select('monthly_fee').eq('active', true)
+      clients = r.data
+    } catch { /* ignore */ }
+    const mrr = (clients ?? []).reduce((sum: number, c: any) => sum + (c.monthly_fee ?? 0), 0)
 
-    const total      = prospects.length
-    const won        = clients.length
-    const conversion = total > 0 ? Math.round(won / total * 100) : 0
-    const pending    = prospects.filter(p => p.status === 'DEVIS').length
-
-    return NextResponse.json({ prospects: total, clients: won, mrr, conversion, newThisWeek, pendingDevis: pending })
+    return NextResponse.json({ total, accepted, pending, inProgress, conversion, newThisWeek, maintenance, mrr })
   }
 
   return NextResponse.json(data ?? [])
 }
 
+// ── Détecter si les nouvelles colonnes existent ───────────────────────────────
+let _hasNewColumns: boolean | null = null
+async function hasNewColumns(supabase: any): Promise<boolean> {
+  if (_hasNewColumns !== null) return _hasNewColumns
+  const { error } = await supabase.from('jrv_prospects').select('activity').limit(1)
+  _hasNewColumns = !error
+  return _hasNewColumns
+}
+
 // ── POST ──────────────────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
-  const { name, company, telegram, service, budget, message } = body
+  const { activity, project_description, telegram, features, wants_maintenance } = body
 
-  if (!name || !service || !message) {
+  if (!activity || !project_description || !telegram) {
     return NextResponse.json({ error: 'Champs requis manquants' }, { status: 400 })
   }
 
   const supabase = createServiceClient()
   if (!supabase) return NextResponse.json({ error: 'DB non configurée' }, { status: 503 })
 
+  const newCols = await hasNewColumns(supabase)
+
+  // Données à insérer — compatibilité anciens ET nouveaux schémas
+  const insertData: Record<string, unknown> = newCols
+    ? {
+        activity:             activity.trim(),
+        project_description:  project_description.trim(),
+        telegram:             telegram.trim(),
+        features:             features?.trim() ?? null,
+        wants_maintenance:    Boolean(wants_maintenance),
+        status:               'NOUVEAU',
+        notes:                [],
+      }
+    : {
+        // Fallback sur les colonnes existantes
+        name:    telegram.trim(),
+        company: activity.trim(),
+        service: activity.trim(),
+        message: project_description.trim() + (features ? `\n\nFonctionnalités: ${features}` : '') + (wants_maintenance ? '\n\n✅ Maintenance souhaitée' : ''),
+        telegram: telegram.trim(),
+        status:  'NOUVEAU',
+        notes:   [{ text: `Activité: ${activity} | Maintenance: ${wants_maintenance ? 'Oui' : 'Non'}`, date: new Date().toISOString() }],
+      }
+
   const { data, error } = await supabase
     .from('jrv_prospects')
-    .insert({
-      name:     name.trim(),
-      company:  company?.trim() ?? null,
-      telegram: telegram?.trim() ?? null,
-      service:  service.trim(),
-      budget:   budget?.trim() ?? null,
-      message:  message.trim(),
-      status:   'NOUVEAU',
-      notes:    [],
-    })
+    .insert(insertData)
     .select().single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Notifier l'admin Telegram
+  // Notifier admin Telegram
   notifyNewProspect({
-    id:      data.id,
-    name:    data.name,
-    company: data.company ?? 'Particulier',
-    sector:  data.service,
-    message: data.message,
-  }).catch(e => console.error('[PROSPECTS] notifyNewProspect:', e?.message))
+    id:                  data.id,
+    activity:            data.activity,
+    project_description: data.project_description,
+    telegram:            data.telegram,
+    features:            data.features ?? null,
+    wants_maintenance:   data.wants_maintenance,
+  }).catch(e => console.error('[PROSPECTS] notify:', e?.message))
 
   return NextResponse.json(data, { status: 201 })
 }
 
-// ── PATCH ──────────────────────────────────────────────────────────────────────
+// ── PATCH ─────────────────────────────────────────────────────────────────────
 export async function PATCH(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
   const { id, status, note } = body

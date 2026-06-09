@@ -4,9 +4,10 @@ import { usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
 
 const NAV = [
-  { href: '/',          emoji: '🏠', label: 'Accueil' },
-  { href: '/portfolio', emoji: '🏆', label: 'Réalisations' },
-  { href: '/contact',   emoji: '🚀', label: 'Projet' },
+  { href: '/',          emoji: '🏠', label: 'Accueil',      external: false },
+  { href: '/portfolio', emoji: '🏆', label: 'Réalisations', external: false },
+  { href: '/contact',   emoji: '🚀', label: 'Projet',       external: false },
+  { href: 'https://t.me/ApplyaaBot', emoji: '💬', label: 'Contact', external: true },
 ]
 
 export default function BottomNav() {
@@ -15,17 +16,15 @@ export default function BottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50"
       style={{
-        background: 'rgba(2,6,23,0.92)',
+        background: 'rgba(2,6,23,0.94)',
         backdropFilter: 'blur(24px)',
         borderTop: '1px solid rgba(255,255,255,0.07)',
       }}>
-      <div className="flex items-center justify-around px-2 py-2 max-w-lg mx-auto">
+      <div className="flex items-center justify-around px-1 py-2 max-w-lg mx-auto">
         {NAV.map(item => {
-          const active = item.href === '/' ? path === '/' : path.startsWith(item.href)
-          return (
-            <Link key={item.href} href={item.href}
-              className="flex flex-col items-center gap-0.5 px-4 py-1 relative">
-              {/* Glow active */}
+          const active = !item.external && (item.href === '/' ? path === '/' : path.startsWith(item.href))
+          const Inner = (
+            <div className="flex flex-col items-center gap-0.5 px-3 py-1 relative min-w-[56px]">
               {active && (
                 <motion.div layoutId="nav-glow"
                   className="absolute inset-0 rounded-2xl"
@@ -38,15 +37,24 @@ export default function BottomNav() {
                 className="text-xl relative z-10">
                 {item.emoji}
               </motion.span>
-              <span className="text-[9px] font-semibold relative z-10 transition-colors"
+              <span className="text-[9px] font-semibold relative z-10 transition-colors whitespace-nowrap"
                 style={{ color: active ? '#60a5fa' : 'rgba(255,255,255,0.35)' }}>
                 {item.label}
               </span>
+            </div>
+          )
+
+          return item.external ? (
+            <a key={item.href} href={item.href} target="_blank" rel="noopener noreferrer">
+              {Inner}
+            </a>
+          ) : (
+            <Link key={item.href} href={item.href}>
+              {Inner}
             </Link>
           )
         })}
       </div>
-      {/* Safe area */}
       <div style={{ height: 'env(safe-area-inset-bottom)' }} />
     </nav>
   )

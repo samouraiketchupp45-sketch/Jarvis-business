@@ -1,463 +1,442 @@
 'use client'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronLeft, ChevronRight, Send, Loader, Check, ArrowRight } from 'lucide-react'
-import Link from 'next/link'
+import { Check, Send, Loader, Star, Zap, Shield, Clock, Headphones } from 'lucide-react'
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-type FormData = {
-  sector: string
-  budget: string
-  features: string[]
-  name: string
-  telegram: string
-  description: string
-  wants_maintenance: boolean
-}
-
-// ─── Config ──────────────────────────────────────────────────────────────────
-const SECTORS = [
-  { id: 'cbd',        emoji: '🌿', label: 'CBD / Bien-être' },
-  { id: 'ecommerce',  emoji: '🛍️', label: 'E-commerce' },
-  { id: 'restaurant', emoji: '🍕', label: 'Restaurant' },
-  { id: 'coiffeur',   emoji: '✂️', label: 'Coiffeur / Esthétique' },
-  { id: 'services',   emoji: '🔧', label: 'Services' },
-  { id: 'autre',      emoji: '✨', label: 'Autre' },
+// ─── Contenu du pack ──────────────────────────────────────────────────────────
+const PACK_ITEMS = [
+  { icon: '🤖', text: 'Bot Telegram complet (commandes, menus, catalogue)' },
+  { icon: '📱', text: 'Mini App premium avec design sur-mesure' },
+  { icon: '⚙️', text: 'Panel Admin web (commandes, produits, clients)' },
+  { icon: '💳', text: 'Intégration paiement (Stripe / PayPal / Crypto)' },
+  { icon: '🚀', text: 'Mise en ligne complète + nom de domaine configuré' },
+  { icon: '🔔', text: 'Notifications automatiques clients en temps réel' },
+  { icon: '📊', text: 'Statistiques & analytics intégrés' },
+  { icon: '🛟', text: 'Support prioritaire 30 jours offert' },
 ]
 
-const BUDGETS = [
-  { id: '500',   label: '500€', sub: 'Budget serré' },
-  { id: '1000',  label: '1 000€', sub: 'Standard' },
-  { id: '1200',  label: '1 200€', sub: 'Pack Complet ⭐', highlight: true },
-  { id: '2000+', label: '2 000€+', sub: 'Sur mesure premium' },
+const BADGES = [
+  { icon: Zap, label: 'Livré en 48h' },
+  { icon: Shield, label: 'Satisfait ou remboursé' },
+  { icon: Headphones, label: 'Support 24/7' },
 ]
 
-const FEATURES_LIST = [
-  { id: 'bot',      emoji: '🤖', label: 'Bot Telegram', price: 0 },
-  { id: 'miniapp',  emoji: '📱', label: 'Mini App', price: 0 },
-  { id: 'panel',    emoji: '⚙️', label: 'Panel Admin', price: 200 },
-  { id: 'payment',  emoji: '💳', label: 'Paiement intégré', price: 200 },
-  { id: 'loyalty',  emoji: '⭐', label: 'Programme fidélité', price: 150 },
-  { id: 'roulette', emoji: '🎰', label: 'Roulette récompenses', price: 100 },
-  { id: 'delivery', emoji: '🚚', label: 'Suivi livraison', price: 100 },
-  { id: 'sav',      emoji: '🎧', label: 'SAV / Tickets', price: 100 },
-]
-
-function calcPrice(features: string[], budget: string): number {
-  const base = 800
-  const extras = features.reduce((s, f) => {
-    const found = FEATURES_LIST.find(fl => fl.id === f)
-    return s + (found?.price ?? 0)
-  }, 0)
-  return Math.max(base + extras, 800)
-}
-
-// ─── Step components ──────────────────────────────────────────────────────────
-
-function StepSector({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+// ─── Pack Card ────────────────────────────────────────────────────────────────
+function PackCard({ onContinue }: { onContinue: () => void }) {
   return (
-    <div className="space-y-4">
-      <div className="text-center">
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] mb-2" style={{ color: 'rgba(96,165,250,0.7)' }}>Étape 1 / 4</p>
-        <h2 className="text-xl font-black text-white mb-1">Quel est votre secteur ?</h2>
-        <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Choisissez l'activité la plus proche</p>
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -30 }}
+      transition={{ duration: 0.5 }}
+      className="w-full max-w-sm mx-auto"
+    >
+      {/* Header */}
+      <div className="text-center mb-6">
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1 }}
+          className="text-xs font-bold tracking-[0.25em] uppercase mb-2"
+          style={{ color: '#60a5fa' }}
+        >
+          Commencer mon projet
+        </motion.p>
+        <motion.h1
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="text-2xl font-black text-white"
+        >
+          Une seule offre.{' '}
+          <span style={{ background: 'linear-gradient(135deg, #3b82f6, #a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            Tout inclus.
+          </span>
+        </motion.h1>
       </div>
-      <div className="grid grid-cols-2 gap-2.5 mt-5">
-        {SECTORS.map(s => (
-          <motion.button key={s.id} whileTap={{ scale: 0.97 }}
-            onClick={() => onChange(s.id)}
-            className="rounded-2xl p-4 text-left transition-all"
-            style={value === s.id
-              ? { background: 'rgba(59,130,246,0.15)', border: '1.5px solid rgba(59,130,246,0.5)' }
-              : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <span className="text-2xl block mb-2">{s.emoji}</span>
-            <p className="text-xs font-bold" style={{ color: value === s.id ? '#60a5fa' : 'rgba(255,255,255,0.7)' }}>
-              {s.label}
-            </p>
-            {value === s.id && (
-              <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
-                className="mt-1.5 h-1 w-6 rounded-full"
-                style={{ background: '#60a5fa' }} />
-            )}
-          </motion.button>
-        ))}
-      </div>
-    </div>
-  )
-}
 
-function StepBudget({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  return (
-    <div className="space-y-4">
-      <div className="text-center">
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] mb-2" style={{ color: 'rgba(96,165,250,0.7)' }}>Étape 2 / 4</p>
-        <h2 className="text-xl font-black text-white mb-1">Votre budget</h2>
-        <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Indicatif — nous nous adaptons toujours</p>
-      </div>
-      <div className="space-y-2.5 mt-5">
-        {BUDGETS.map(b => (
-          <motion.button key={b.id} whileTap={{ scale: 0.98 }}
-            onClick={() => onChange(b.id)}
-            className="w-full rounded-2xl p-4 flex items-center justify-between text-left transition-all"
-            style={value === b.id
-              ? { background: b.highlight ? 'rgba(59,130,246,0.18)' : 'rgba(59,130,246,0.12)', border: `1.5px solid ${b.highlight ? '#3b82f6' : 'rgba(59,130,246,0.4)'}` }
-              : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <div>
-              <p className="text-base font-black text-white">{b.label}</p>
-              <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>{b.sub}</p>
-            </div>
-            {value === b.id
-              ? <div className="h-5 w-5 rounded-full flex items-center justify-center" style={{ background: '#3b82f6' }}>
-                  <Check size={11} color="#fff" />
-                </div>
-              : <div className="h-5 w-5 rounded-full" style={{ border: '1.5px solid rgba(255,255,255,0.2)' }} />
-            }
-          </motion.button>
-        ))}
-      </div>
-    </div>
-  )
-}
+      {/* Main Pack Card */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.3, type: 'spring', stiffness: 300, damping: 25 }}
+        style={{
+          background: 'linear-gradient(145deg, rgba(59,130,246,0.08) 0%, rgba(168,85,247,0.08) 100%)',
+          border: '1px solid rgba(59,130,246,0.35)',
+          borderRadius: 24,
+          boxShadow: '0 0 60px rgba(59,130,246,0.15), 0 0 120px rgba(168,85,247,0.08)',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+        className="p-6 mb-4"
+      >
+        {/* Glow top */}
+        <div style={{
+          position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
+          width: 180, height: 1,
+          background: 'linear-gradient(90deg, transparent, rgba(96,165,250,0.8), transparent)',
+        }} />
 
-function StepFeatures({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
-  function toggle(id: string) {
-    onChange(value.includes(id) ? value.filter(f => f !== id) : [...value, id])
-  }
-  return (
-    <div className="space-y-4">
-      <div className="text-center">
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] mb-2" style={{ color: 'rgba(96,165,250,0.7)' }}>Étape 3 / 4</p>
-        <h2 className="text-xl font-black text-white mb-1">Fonctionnalités</h2>
-        <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Sélectionnez ce que vous voulez</p>
-      </div>
-      <div className="space-y-2 mt-4">
-        {FEATURES_LIST.map(f => {
-          const selected = value.includes(f.id)
-          const required = f.id === 'bot' || f.id === 'miniapp'
-          return (
-            <motion.button key={f.id} whileTap={{ scale: 0.98 }}
-              onClick={() => !required && toggle(f.id)}
-              className="w-full rounded-2xl px-4 py-3 flex items-center gap-3 text-left transition-all"
-              style={selected
-                ? { background: 'rgba(59,130,246,0.12)', border: '1.5px solid rgba(59,130,246,0.4)' }
-                : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', opacity: required ? 1 : 0.9 }}>
-              <span className="text-lg">{f.emoji}</span>
-              <div className="flex-1">
-                <p className="text-sm font-bold" style={{ color: selected ? '#fff' : 'rgba(255,255,255,0.75)' }}>
-                  {f.label}
-                  {required && <span className="ml-2 text-[8px] font-black px-1.5 py-0.5 rounded-full" style={{ background: '#60a5fa20', color: '#60a5fa' }}>INCLUS</span>}
-                </p>
-                {f.price > 0 && <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>+{f.price}€</p>}
-              </div>
-              <div className="h-5 w-5 rounded-md flex items-center justify-center flex-shrink-0 transition-all"
-                style={selected ? { background: '#3b82f6' } : { border: '1.5px solid rgba(255,255,255,0.2)' }}>
-                {selected && <Check size={11} color="#fff" />}
-              </div>
-            </motion.button>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-function StepContact({ form, onChange }: { form: FormData; onChange: (k: keyof FormData, v: any) => void }) {
-  const inp: React.CSSProperties = {
-    width: '100%', padding: '13px 16px', borderRadius: 14, fontSize: 14,
-    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-    color: '#fff', outline: 'none', fontFamily: 'inherit',
-  }
-  return (
-    <div className="space-y-4">
-      <div className="text-center">
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] mb-2" style={{ color: 'rgba(96,165,250,0.7)' }}>Étape 4 / 4</p>
-        <h2 className="text-xl font-black text-white mb-1">Vos coordonnées</h2>
-        <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>On vous répond sous 24h sur Telegram</p>
-      </div>
-      <div className="space-y-3 mt-4">
-        <div>
-          <label className="block text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>Votre prénom *</label>
-          <input style={inp} placeholder="Alexandre" value={form.name}
-            onChange={e => onChange('name', e.target.value)} />
-        </div>
-        <div>
-          <label className="block text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>Votre @Telegram *</label>
-          <input style={inp} placeholder="@monusername" value={form.telegram}
-            onChange={e => onChange('telegram', e.target.value)} />
-          <p className="text-[10px] mt-1.5" style={{ color: 'rgba(255,255,255,0.25)' }}>Notre seul moyen de contact — pas d'email</p>
-        </div>
-        <div>
-          <label className="block text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: 'rgba(255,255,255,0.4)' }}>Décrivez votre projet <span className="normal-case text-white/20">(optionnel)</span></label>
-          <textarea style={{ ...inp, resize: 'none', minHeight: 90 } as React.CSSProperties}
-            placeholder="Boutique CBD avec système de fidélité, roulette, et livraison…"
-            value={form.description} rows={4}
-            onChange={e => onChange('description', e.target.value)} />
-        </div>
-        <motion.button whileTap={{ scale: 0.98 }}
-          onClick={() => onChange('wants_maintenance', !form.wants_maintenance)}
-          className="w-full rounded-2xl px-4 py-3 flex items-center gap-3 text-left transition-all"
-          style={form.wants_maintenance
-            ? { background: 'rgba(0,255,136,0.08)', border: '1.5px solid rgba(0,255,136,0.3)' }
-            : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
-          <span className="text-xl">🛠</span>
-          <div className="flex-1">
-            <p className="text-sm font-bold text-white">Maintenance 50€/mois</p>
-            <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Bugs, mises à jour, support prioritaire</p>
+        {/* Badge recommandé */}
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full"
+            style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.2), rgba(168,85,247,0.2))', border: '1px solid rgba(59,130,246,0.4)' }}>
+            <Star size={11} fill="#fbbf24" color="#fbbf24" />
+            <span className="text-[10px] font-bold text-yellow-300 tracking-wider">OFFRE RECOMMANDÉE</span>
           </div>
-          <div className="h-5 w-5 rounded-md flex items-center justify-center flex-shrink-0"
-            style={form.wants_maintenance ? { background: '#00ff88' } : { border: '1.5px solid rgba(255,255,255,0.2)' }}>
-            {form.wants_maintenance && <Check size={11} color="#000" />}
+          <div className="text-[10px] font-semibold text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full border border-green-400/20">
+            ✓ Disponible
           </div>
-        </motion.button>
-      </div>
-    </div>
-  )
-}
+        </div>
 
-function StepResult({ form, price, onRetry }: { form: FormData; price: number; onRetry: () => void }) {
-  const selectedSector = SECTORS.find(s => s.id === form.sector)
-  const selectedFeatures = FEATURES_LIST.filter(f => form.features.includes(f.id))
-  const tgUrl = `https://t.me/ApplyaaBot?start=devis_${form.telegram.replace('@','')}`
+        {/* Pack name */}
+        <div className="mb-4">
+          <p className="text-xs text-blue-400/70 font-semibold tracking-widest uppercase mb-1">Pack</p>
+          <h2 className="text-3xl font-black text-white tracking-tight">COMPLET</h2>
+        </div>
 
-  return (
-    <div className="space-y-5 text-center">
-      <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 20 }}>
-        <div className="text-6xl mb-3">🎉</div>
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] mb-2" style={{ color: 'rgba(0,255,136,0.7)' }}>Devis prêt !</p>
-        <h2 className="text-xl font-black text-white">Votre estimation</h2>
+        {/* Price */}
+        <div className="flex items-baseline gap-2 mb-6 pb-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <span className="text-5xl font-black text-white">1 200</span>
+          <span className="text-2xl font-bold" style={{ color: '#60a5fa' }}>€</span>
+          <span className="text-xs text-white/30 ml-1">paiement unique</span>
+        </div>
+
+        {/* Checklist */}
+        <ul className="space-y-3">
+          {PACK_ITEMS.map((item, i) => (
+            <motion.li
+              key={i}
+              initial={{ opacity: 0, x: -15 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 + i * 0.06 }}
+              className="flex items-start gap-3"
+            >
+              <div className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center mt-0.5"
+                style={{ background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.4)' }}>
+                <Check size={10} className="text-blue-400" strokeWidth={3} />
+              </div>
+              <span className="text-sm text-white/75 leading-relaxed">
+                <span className="mr-1">{item.icon}</span>
+                {item.text}
+              </span>
+            </motion.li>
+          ))}
+        </ul>
       </motion.div>
 
-      {/* Prix */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-        className="rounded-2xl p-6"
-        style={{ background: 'linear-gradient(135deg,rgba(59,130,246,0.12),rgba(124,58,237,0.12))', border: '1px solid rgba(59,130,246,0.3)' }}>
-        <p className="text-5xl font-black text-white mb-1">{price.toLocaleString('fr')}€</p>
-        <p className="text-sm font-bold mb-1" style={{ color: 'rgba(255,255,255,0.5)' }}>Paiement unique · Clé en main</p>
-        <p className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>+ Hébergement 15€/mois</p>
-      </motion.div>
+      {/* Badges */}
+      <div className="grid grid-cols-3 gap-2 mb-6">
+        {BADGES.map(({ icon: Icon, label }, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.9 + i * 0.08 }}
+            className="flex flex-col items-center gap-1.5 py-3 rounded-2xl"
+            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
+          >
+            <Icon size={14} className="text-blue-400" />
+            <span className="text-[9px] font-semibold text-white/50 text-center leading-tight">{label}</span>
+          </motion.div>
+        ))}
+      </div>
 
-      {/* Récap */}
-      <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-        className="rounded-2xl p-4 text-left space-y-2"
-        style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
-        <p className="text-[10px] font-bold uppercase tracking-wider mb-3" style={{ color: 'rgba(255,255,255,0.35)' }}>Récapitulatif</p>
-        <div className="flex justify-between text-xs">
-          <span style={{ color: 'rgba(255,255,255,0.5)' }}>Secteur</span>
-          <span className="font-bold text-white">{selectedSector?.emoji} {selectedSector?.label}</span>
+      {/* CTA */}
+      <motion.button
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.1 }}
+        whileTap={{ scale: 0.97 }}
+        onClick={onContinue}
+        className="w-full py-4 rounded-2xl font-black text-white text-base tracking-wide relative overflow-hidden"
+        style={{
+          background: 'linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%)',
+          boxShadow: '0 8px 32px rgba(59,130,246,0.35)',
+        }}
+      >
+        <span className="relative z-10">🚀 Démarrer mon projet</span>
+      </motion.button>
+
+      <p className="text-center text-[10px] text-white/25 mt-3">
+        Sans engagement · Réponse sous 2h · Devis gratuit
+      </p>
+    </motion.div>
+  )
+}
+
+// ─── Form ─────────────────────────────────────────────────────────────────────
+type FormData = { name: string; telegram: string; description: string }
+
+function ContactForm({
+  form, setForm, loading, onSubmit,
+}: {
+  form: FormData
+  setForm: (f: FormData) => void
+  loading: boolean
+  onSubmit: () => void
+}) {
+  const valid = form.telegram.length >= 3 && form.description.length >= 10
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -30 }}
+      transition={{ duration: 0.45 }}
+      className="w-full max-w-sm mx-auto"
+    >
+      {/* Mini pack recap */}
+      <div className="flex items-center gap-3 mb-6 p-3 rounded-2xl"
+        style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)' }}>
+        <div className="w-8 h-8 rounded-xl flex items-center justify-center text-base"
+          style={{ background: 'linear-gradient(135deg, #3b82f6, #7c3aed)' }}>
+          🚀
         </div>
-        <div className="flex justify-between text-xs">
-          <span style={{ color: 'rgba(255,255,255,0.5)' }}>Bonjour</span>
-          <span className="font-bold text-white">{form.name} · {form.telegram}</span>
+        <div className="flex-1">
+          <p className="text-xs font-bold text-white">PACK COMPLET</p>
+          <p className="text-[10px] text-white/40">Bot + Mini App + Panel Admin</p>
         </div>
-        {selectedFeatures.length > 0 && (
-          <div className="pt-1" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
-            <p className="text-[10px] mb-1.5" style={{ color: 'rgba(255,255,255,0.35)' }}>Fonctionnalités :</p>
-            <div className="flex flex-wrap gap-1.5">
-              {selectedFeatures.map(f => (
-                <span key={f.id} className="text-[9px] font-bold px-2 py-1 rounded-full"
-                  style={{ background: 'rgba(59,130,246,0.12)', color: '#60a5fa' }}>
-                  {f.emoji} {f.label}
-                </span>
-              ))}
-            </div>
+        <span className="text-lg font-black text-blue-400">1 200€</span>
+      </div>
+
+      {/* Title */}
+      <div className="mb-6">
+        <h2 className="text-xl font-black text-white mb-1">Vos informations</h2>
+        <p className="text-xs text-white/40">On vous contacte sous 2h pour valider votre projet.</p>
+      </div>
+
+      {/* Fields */}
+      <div className="space-y-4 mb-6">
+        <div>
+          <label className="text-xs font-semibold text-white/50 uppercase tracking-widest mb-1.5 block">
+            Prénom / Nom
+          </label>
+          <input
+            type="text"
+            placeholder="Ex: Thomas Martin"
+            value={form.name}
+            onChange={e => setForm({ ...form, name: e.target.value })}
+            className="w-full px-4 py-3 rounded-2xl text-sm text-white placeholder-white/25 outline-none transition-all"
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.1)',
+            }}
+          />
+        </div>
+
+        <div>
+          <label className="text-xs font-semibold text-white/50 uppercase tracking-widest mb-1.5 block">
+            Pseudo Telegram <span className="text-blue-400">*</span>
+          </label>
+          <div className="relative">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-sm font-bold">@</span>
+            <input
+              type="text"
+              placeholder="votre_pseudo"
+              value={form.telegram}
+              onChange={e => setForm({ ...form, telegram: e.target.value.replace('@', '') })}
+              className="w-full pl-8 pr-4 py-3 rounded-2xl text-sm text-white placeholder-white/25 outline-none"
+              style={{
+                background: 'rgba(255,255,255,0.04)',
+                border: `1px solid ${form.telegram.length >= 3 ? 'rgba(59,130,246,0.5)' : 'rgba(255,255,255,0.1)'}`,
+              }}
+            />
           </div>
+        </div>
+
+        <div>
+          <label className="text-xs font-semibold text-white/50 uppercase tracking-widest mb-1.5 block">
+            Décrivez votre projet <span className="text-blue-400">*</span>
+          </label>
+          <textarea
+            rows={4}
+            placeholder="Ex: Je vends du CBD, j'ai besoin d'une boutique Telegram avec paiement en ligne et un bot pour les commandes…"
+            value={form.description}
+            onChange={e => setForm({ ...form, description: e.target.value })}
+            className="w-full px-4 py-3 rounded-2xl text-sm text-white placeholder-white/25 outline-none resize-none"
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: `1px solid ${form.description.length >= 10 ? 'rgba(59,130,246,0.5)' : 'rgba(255,255,255,0.1)'}`,
+            }}
+          />
+          <p className="text-[10px] text-white/25 mt-1">{form.description.length} / 500 caractères</p>
+        </div>
+      </div>
+
+      {/* Submit */}
+      <motion.button
+        whileTap={{ scale: 0.97 }}
+        onClick={onSubmit}
+        disabled={!valid || loading}
+        className="w-full py-4 rounded-2xl font-black text-white text-base flex items-center justify-center gap-2 transition-all"
+        style={{
+          background: valid
+            ? 'linear-gradient(135deg, #3b82f6 0%, #7c3aed 100%)'
+            : 'rgba(255,255,255,0.05)',
+          boxShadow: valid ? '0 8px 32px rgba(59,130,246,0.35)' : 'none',
+          color: valid ? 'white' : 'rgba(255,255,255,0.25)',
+        }}
+      >
+        {loading ? (
+          <Loader size={18} className="animate-spin" />
+        ) : (
+          <>
+            <Send size={16} />
+            Recevoir mon devis
+          </>
         )}
-      </motion.div>
+      </motion.button>
 
-      {/* CTAs */}
-      <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
-        className="space-y-3">
-        <a href={tgUrl} target="_blank" rel="noopener noreferrer">
-          <motion.button whileTap={{ scale: 0.97 }}
-            className="w-full py-4 rounded-2xl text-base font-black flex items-center justify-center gap-2 text-white"
-            style={{ background: 'linear-gradient(135deg,#3b82f6,#7c3aed)', boxShadow: '0 8px 32px rgba(59,130,246,0.35)' }}>
-            💬 Continuer sur Telegram
-            <ArrowRight size={18} />
-          </motion.button>
-        </a>
-        <button onClick={onRetry}
-          className="w-full py-3 rounded-2xl text-sm font-medium"
-          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}>
-          ← Recommencer
-        </button>
-      </motion.div>
-    </div>
+      <p className="text-center text-[10px] text-white/20 mt-3">
+        Aucun paiement maintenant · Réponse garantie sous 2h
+      </p>
+    </motion.div>
   )
 }
 
-// ─── Page principale ──────────────────────────────────────────────────────────
+// ─── Success ──────────────────────────────────────────────────────────────────
+function SuccessScreen() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+      className="w-full max-w-sm mx-auto text-center py-12"
+    >
+      <motion.div
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ delay: 0.2, type: 'spring', stiffness: 400, damping: 20 }}
+        className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
+        style={{
+          background: 'linear-gradient(135deg, rgba(59,130,246,0.2), rgba(168,85,247,0.2))',
+          border: '2px solid rgba(59,130,246,0.5)',
+          boxShadow: '0 0 40px rgba(59,130,246,0.25)',
+        }}
+      >
+        <Check size={36} className="text-blue-400" strokeWidth={3} />
+      </motion.div>
+
+      <motion.h2
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+        className="text-2xl font-black text-white mb-3"
+      >
+        Demande envoyée !
+      </motion.h2>
+
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.55 }}
+        className="text-sm text-white/50 leading-relaxed mb-8"
+      >
+        On revient vers vous sur Telegram{' '}
+        <span className="text-blue-400 font-semibold">dans les 2 heures</span>
+        {' '}pour valider votre projet et démarrer.
+      </motion.p>
+
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.7 }}
+        className="p-4 rounded-2xl mb-6 text-left"
+        style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)' }}
+      >
+        <p className="text-xs font-bold text-blue-400 mb-2">🚀 Pack COMPLET — 1 200€</p>
+        <p className="text-xs text-white/40">Bot + Mini App + Panel Admin · Livré en 48h</p>
+      </motion.div>
+
+      <motion.a
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.85 }}
+        href="https://t.me/ApplyaaBot"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-bold text-white"
+        style={{
+          background: 'linear-gradient(135deg, #3b82f6, #7c3aed)',
+          boxShadow: '0 4px 20px rgba(59,130,246,0.3)',
+        }}
+      >
+        💬 Nous contacter sur Telegram
+      </motion.a>
+    </motion.div>
+  )
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+type Step = 'pack' | 'form' | 'success'
+
 export default function ContactPage() {
-  const [step, setStep] = useState(0)
-  const [sending, setSending] = useState(false)
-  const [done, setDone] = useState(false)
-  const [error, setError] = useState('')
-  const [form, setForm] = useState<FormData>({
-    sector: '',
-    budget: '1200',
-    features: ['bot', 'miniapp', 'panel'],
-    name: '',
-    telegram: '',
-    description: '',
-    wants_maintenance: false,
-  })
+  const [step, setStep] = useState<Step>('pack')
+  const [loading, setLoading] = useState(false)
+  const [form, setForm] = useState<FormData>({ name: '', telegram: '', description: '' })
 
-  function updateForm(key: keyof FormData, value: any) {
-    setForm(f => ({ ...f, [key]: value }))
-  }
-
-  const estimatedPrice = calcPrice(form.features, form.budget)
-
-  const canNext = [
-    () => !!form.sector,
-    () => !!form.budget,
-    () => form.features.length > 0,
-    () => !!form.name && !!form.telegram && form.telegram.startsWith('@'),
-  ]
-
-  async function submit() {
-    setSending(true)
-    setError('')
+  const handleSubmit = async () => {
+    setLoading(true)
     try {
-      const sector = SECTORS.find(s => s.id === form.sector)
-      const res = await fetch('/api/prospects', {
+      await fetch('/api/prospects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          activity: sector?.label ?? form.sector,
-          project_description: form.description || `Budget: ${form.budget}€ | Features: ${form.features.join(', ')}`,
+          name: form.name,
           telegram: form.telegram,
-          features: form.features.join(', '),
-          wants_maintenance: form.wants_maintenance,
+          project_description: form.description,
+          budget: '1200',
+          pack: 'complet',
         }),
       })
-      if (!res.ok) throw new Error()
-      setDone(true)
-      setStep(4)
     } catch {
-      setError('Erreur réseau. Réessayez.')
+      // silent
     } finally {
-      setSending(false)
+      setLoading(false)
+      setStep('success')
     }
   }
 
-  function handleNext() {
-    if (step < 3) { setStep(s => s + 1); return }
-    submit()
-  }
-
-  function handleReset() {
-    setStep(0); setDone(false); setError('')
-    setForm({ sector: '', budget: '1200', features: ['bot', 'miniapp', 'panel'], name: '', telegram: '', description: '', wants_maintenance: false })
-  }
-
-  const steps = ['Secteur', 'Budget', 'Options', 'Contact']
-
   return (
-    <div className="min-h-screen pb-28" style={{ background: 'linear-gradient(180deg,#020617,#081428)' }}>
-
-      {/* Header */}
-      <div className="sticky top-0 z-40 px-4 pt-safe pt-4 pb-3"
-        style={{ background: 'rgba(2,6,23,0.9)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-        <div className="flex items-center gap-3">
-          <Link href="/" className="flex h-8 w-8 items-center justify-center rounded-full"
-            style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <ChevronLeft size={16} style={{ color: 'rgba(255,255,255,0.6)' }} />
-          </Link>
-          <div>
-            <h1 className="text-base font-black text-white">Commencer mon projet</h1>
-            <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>Pack Complet · 1 200€ · Livraison 48h</p>
-          </div>
+    <div
+      className="min-h-screen pb-28 px-4 pt-6"
+      style={{ background: 'linear-gradient(160deg, #020617 0%, #081428 55%, #0f172a 100%)' }}
+    >
+      {/* Step indicator (pack → form only) */}
+      {step !== 'success' && (
+        <div className="flex items-center justify-center gap-2 mb-8">
+          {(['pack', 'form'] as const).map((s, i) => (
+            <div key={s} className="flex items-center gap-2">
+              <div
+                className="w-2 h-2 rounded-full transition-all duration-300"
+                style={{
+                  background: step === s ? '#3b82f6' : step === 'form' && s === 'pack' ? '#22c55e' : 'rgba(255,255,255,0.15)',
+                  width: step === s ? 20 : 8,
+                  borderRadius: step === s ? 4 : 999,
+                }}
+              />
+              {i < 1 && <div className="w-8 h-px" style={{ background: 'rgba(255,255,255,0.1)' }} />}
+            </div>
+          ))}
         </div>
+      )}
 
-        {/* Progress bar */}
-        {!done && (
-          <div className="mt-3">
-            <div className="flex gap-1">
-              {steps.map((s, i) => (
-                <div key={s} className="flex-1">
-                  <motion.div className="h-0.5 rounded-full"
-                    animate={{ background: i <= step ? '#3b82f6' : 'rgba(255,255,255,0.1)' }}
-                    transition={{ duration: 0.3 }} />
-                </div>
-              ))}
-            </div>
-            <div className="flex justify-between mt-1">
-              {steps.map((s, i) => (
-                <span key={s} className="text-[8px] font-medium"
-                  style={{ color: i === step ? '#60a5fa' : 'rgba(255,255,255,0.25)' }}>{s}</span>
-              ))}
-            </div>
-          </div>
+      <AnimatePresence mode="wait">
+        {step === 'pack' && (
+          <PackCard key="pack" onContinue={() => setStep('form')} />
         )}
-      </div>
-
-      <div className="px-4 pt-6 pb-4">
-        <AnimatePresence mode="wait">
-          <motion.div key={step}
-            initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.25 }}>
-
-            {step === 0 && <StepSector value={form.sector} onChange={v => updateForm('sector', v)} />}
-            {step === 1 && <StepBudget value={form.budget} onChange={v => updateForm('budget', v)} />}
-            {step === 2 && <StepFeatures value={form.features} onChange={v => updateForm('features', v)} />}
-            {step === 3 && <StepContact form={form} onChange={updateForm} />}
-            {step === 4 && done && <StepResult form={form} price={estimatedPrice} onRetry={handleReset} />}
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Prix estimé (étapes 1-3) */}
-        {step > 0 && step < 4 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className="mt-5 rounded-2xl px-4 py-3 flex items-center justify-between"
-            style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)' }}>
-            <p className="text-xs" style={{ color: 'rgba(255,255,255,0.45)' }}>Estimation en cours</p>
-            <motion.p key={estimatedPrice} initial={{ scale: 1.2 }} animate={{ scale: 1 }}
-              className="text-base font-black"
-              style={{ background: 'linear-gradient(135deg,#60a5fa,#a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-              ~{estimatedPrice.toLocaleString('fr')}€
-            </motion.p>
-          </motion.div>
+        {step === 'form' && (
+          <ContactForm
+            key="form"
+            form={form}
+            setForm={setForm}
+            loading={loading}
+            onSubmit={handleSubmit}
+          />
         )}
-
-        {/* Error */}
-        {error && (
-          <div className="mt-3 rounded-xl px-4 py-3 text-xs" style={{ background: 'rgba(255,68,85,0.08)', border: '1px solid rgba(255,68,85,0.2)', color: '#ff8888' }}>
-            ⚠️ {error}
-          </div>
-        )}
-
-        {/* Navigation */}
-        {step < 4 && (
-          <div className="flex gap-3 mt-5">
-            {step > 0 && (
-              <button onClick={() => setStep(s => s - 1)}
-                className="flex items-center justify-center h-12 w-12 rounded-2xl flex-shrink-0"
-                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}>
-                <ChevronLeft size={18} style={{ color: 'rgba(255,255,255,0.6)' }} />
-              </button>
-            )}
-            <motion.button whileTap={{ scale: 0.97 }}
-              onClick={handleNext}
-              disabled={!canNext[step]?.() || sending}
-              className="flex-1 h-12 rounded-2xl text-sm font-black flex items-center justify-center gap-2 transition-all disabled:opacity-40"
-              style={{ background: canNext[step]?.() ? 'linear-gradient(135deg,#3b82f6,#7c3aed)' : 'rgba(255,255,255,0.08)', color: '#fff', boxShadow: canNext[step]?.() ? '0 6px 24px rgba(59,130,246,0.35)' : 'none' }}>
-              {sending
-                ? <><Loader size={16} className="animate-spin" /> Envoi...</>
-                : step < 3
-                  ? <>Suivant <ChevronRight size={16} /></>
-                  : <><Send size={16} /> Envoyer ma demande</>
-              }
-            </motion.button>
-          </div>
-        )}
-
-        {step < 4 && (
-          <p className="text-center text-[10px] mt-4" style={{ color: 'rgba(255,255,255,0.2)' }}>
-            Réponse sous 24h · Gratuit · Sans engagement
-          </p>
-        )}
-      </div>
+        {step === 'success' && <SuccessScreen key="success" />}
+      </AnimatePresence>
     </div>
   )
 }

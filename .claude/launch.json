@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "jarvis-business",
+      "runtimeExecutable": "/bin/bash",
+      "runtimeArgs": ["/tmp/run-jarvis.sh"],
+      "port": 3000,
+      "autoPort": true
+    }
+  ]
+}
