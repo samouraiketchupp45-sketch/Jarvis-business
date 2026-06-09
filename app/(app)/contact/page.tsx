@@ -165,7 +165,7 @@ function PackCard({ onContinue }: { onContinue: () => void }) {
 }
 
 // ─── Form ─────────────────────────────────────────────────────────────────────
-type FormData = { name: string; telegram: string; description: string }
+type FormData = { description: string }
 
 function ContactForm({
   form, setForm, loading, onSubmit,
@@ -175,7 +175,7 @@ function ContactForm({
   loading: boolean
   onSubmit: () => void
 }) {
-  const valid = form.telegram.length >= 3 && form.description.length >= 10
+  const valid = form.description.length >= 10
 
   return (
     <motion.div
@@ -207,43 +207,6 @@ function ContactForm({
 
       {/* Fields */}
       <div className="space-y-4 mb-6">
-        <div>
-          <label className="text-xs font-semibold text-white/50 uppercase tracking-widest mb-1.5 block">
-            Prénom / Nom
-          </label>
-          <input
-            type="text"
-            placeholder="Ex: Thomas Martin"
-            value={form.name}
-            onChange={e => setForm({ ...form, name: e.target.value })}
-            className="w-full px-4 py-3 rounded-2xl text-sm text-white placeholder-white/25 outline-none transition-all"
-            style={{
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.1)',
-            }}
-          />
-        </div>
-
-        <div>
-          <label className="text-xs font-semibold text-white/50 uppercase tracking-widest mb-1.5 block">
-            Pseudo Telegram <span className="text-blue-400">*</span>
-          </label>
-          <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30 text-sm font-bold">@</span>
-            <input
-              type="text"
-              placeholder="votre_pseudo"
-              value={form.telegram}
-              onChange={e => setForm({ ...form, telegram: e.target.value.replace('@', '') })}
-              className="w-full pl-8 pr-4 py-3 rounded-2xl text-sm text-white placeholder-white/25 outline-none"
-              style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: `1px solid ${form.telegram.length >= 3 ? 'rgba(59,130,246,0.5)' : 'rgba(255,255,255,0.1)'}`,
-              }}
-            />
-          </div>
-        </div>
-
         <div>
           <label className="text-xs font-semibold text-white/50 uppercase tracking-widest mb-1.5 block">
             Décrivez votre projet <span className="text-blue-400">*</span>
@@ -373,7 +336,7 @@ type Step = 'pack' | 'form' | 'success'
 export default function ContactPage() {
   const [step, setStep] = useState<Step>('pack')
   const [loading, setLoading] = useState(false)
-  const [form, setForm] = useState<FormData>({ name: '', telegram: '', description: '' })
+  const [form, setForm] = useState<FormData>({ description: '' })
 
   const handleSubmit = async () => {
     setLoading(true)
@@ -382,8 +345,6 @@ export default function ContactPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: form.name,
-          telegram: form.telegram,
           project_description: form.description,
           budget: '1200',
           pack: 'complet',
