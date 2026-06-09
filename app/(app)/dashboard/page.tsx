@@ -107,21 +107,51 @@ export default function DashboardPage() {
             <div>
               <p className="label mb-2">📥 Demandes en attente</p>
               <div className="space-y-2">
-                {demandes.slice(0, 5).map(p => (
-                  <div key={p.id} className="card p-3 flex items-center justify-between"
-                    style={{ border: '1px solid rgba(0,207,255,.2)' }}>
-                    <div>
-                      <p className="text-sm font-bold text-white">{p.activity}</p>
-                      <p className="text-xs text-cyan-400">{p.telegram}</p>
+                {demandes.slice(0, 5).map(p => {
+                  const tgRaw = p.telegram ?? ''
+                  const tgHandle = tgRaw.replace('@', '').trim()
+                  const hasHandle = tgHandle && tgHandle !== 'Non renseigné' && !tgHandle.startsWith('ID:')
+                  const tgUrl = hasHandle
+                    ? `https://t.me/${tgHandle}`
+                    : null
+                  const displayTg = tgRaw.startsWith('@') ? tgRaw : tgRaw ? `@${tgHandle}` : '—'
+
+                  return (
+                    <div key={p.id} className="card p-3"
+                      style={{ border: '1px solid rgba(0,207,255,.2)' }}>
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-white truncate">{p.activity ?? 'Pack Complet 1200€'}</p>
+                          <p className="text-xs font-mono mt-0.5"
+                            style={{ color: hasHandle ? '#00cfff' : 'rgba(255,255,255,0.3)' }}>
+                            {hasHandle ? displayTg : 'Telegram non renseigné'}
+                          </p>
+                        </div>
+                        {tgUrl ? (
+                          <a href={tgUrl} target="_blank" rel="noreferrer" className="flex-shrink-0">
+                            <button className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl font-bold"
+                              style={{ background: 'linear-gradient(135deg,rgba(0,207,255,.15),rgba(59,130,246,.15))', color: '#00cfff', border: '1px solid rgba(0,207,255,.35)' }}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.88 13.47l-2.967-.924c-.643-.204-.657-.643.136-.953l11.57-4.46c.537-.194 1.006.131.834.944z"/>
+                              </svg>
+                              Contacter
+                            </button>
+                          </a>
+                        ) : (
+                          <span className="text-[10px] text-white/20 flex-shrink-0">Pas de handle</span>
+                        )}
+                      </div>
+                      {p.project_description && (
+                        <p className="text-[11px] text-white/40 line-clamp-2 leading-relaxed">
+                          {p.project_description}
+                        </p>
+                      )}
+                      <p className="text-[10px] text-white/20 mt-1.5">
+                        {new Date(p.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      </p>
                     </div>
-                    <a href={`https://t.me/${p.telegram?.replace('@','')}`} target="_blank" rel="noreferrer">
-                      <button className="text-xs px-3 py-1.5 rounded-full font-bold"
-                        style={{ background: 'rgba(0,207,255,.1)', color: '#00cfff', border: '1px solid rgba(0,207,255,.3)' }}>
-                        Contacter
-                      </button>
-                    </a>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}

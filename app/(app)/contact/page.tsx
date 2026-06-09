@@ -1,7 +1,18 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Check, Send, Loader, Star, Zap, Shield, Clock, Headphones, Home } from 'lucide-react'
+
+// Lire l'utilisateur Telegram depuis le SDK Mini App
+function getTelegramUser(): { username?: string; first_name?: string; id?: number } | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const tg = (window as any).Telegram?.WebApp
+    return tg?.initDataUnsafe?.user ?? null
+  } catch {
+    return null
+  }
+}
 
 // ─── Contenu du pack ──────────────────────────────────────────────────────────
 const PACK_ITEMS = [
@@ -168,12 +179,13 @@ function PackCard({ onContinue }: { onContinue: () => void }) {
 type FormData = { description: string }
 
 function ContactForm({
-  form, setForm, loading, apiError, onSubmit,
+  form, setForm, loading, apiError, telegramHandle, onSubmit,
 }: {
   form: FormData
   setForm: (f: FormData) => void
   loading: boolean
   apiError: string | null
+  telegramHandle: string
   onSubmit: () => void
 }) {
   const valid = form.description.length >= 10
@@ -200,10 +212,19 @@ function ContactForm({
         <span className="text-lg font-black text-blue-400">1 200€</span>
       </div>
 
-      {/* Title */}
+      {/* Title + Telegram détecté */}
       <div className="mb-6">
         <h2 className="text-xl font-black text-white mb-1">Vos informations</h2>
-        <p className="text-xs text-white/40">On vous contacte sous 2h pour valider votre projet.</p>
+        <p className="text-xs text-white/40 mb-3">On vous contacte sous 2h pour valider votre projet.</p>
+        {/* Badge Telegram auto-détecté */}
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl"
+          style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.18)' }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="#60a5fa">
+            <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.88 13.47l-2.967-.924c-.643-.204-.657-.643.136-.953l11.57-4.46c.537-.194 1.006.131.834.944z"/>
+          </svg>
+          <span className="text-xs text-blue-300 font-semibold">{telegramHandle}</span>
+          <span className="text-[10px] text-white/25 ml-auto">détecté automatiquement</span>
+        </div>
       </div>
 
       {/* Fields */}
@@ -495,10 +516,22 @@ function SuccessScreen() {
 type Step = 'pack' | 'form' | 'success'
 
 export default function ContactPage() {
-  const [step, setStep]       = useState<Step>('pack')
-  const [loading, setLoading] = useState(false)
+  const [step, setStep]         = useState<Step>('pack')
+  const [loading, setLoading]   = useState(false)
   const [apiError, setApiError] = useState<string | null>(null)
-  const [form, setForm]       = useState<FormData>({ description: '' })
+  const [form, setForm]         = useState<FormData>({ description: '' })
+  const [tgUser, setTgUser]     = useState<{ username?: string; first_name?: string; id?: number } | null>(null)
+
+  useEffect(() => {
+    const user = getTelegramUser()
+    if (user) setTgUser(user)
+  }, [])
+
+  const telegramHandle = tgUser?.username
+    ? `@${tgUser.username}`
+    : tgUser?.first_name
+    ? `${tgUser.first_name} (ID:${tgUser.id})`
+    : 'Non renseigné'
 
   const handleSubmit = async () => {
     setLoading(true)
@@ -510,6 +543,9 @@ export default function ContactPage() {
         body: JSON.stringify({
           project_description: form.description,
           activity: 'Pack Complet 1200€',
+          telegram: telegramHandle,
+          name: tgUser?.first_name ?? tgUser?.username ?? 'Prospect',
+          telegram_id: tgUser?.id,
           budget: '1200',
           pack: 'complet',
         }),
@@ -568,6 +604,7 @@ export default function ContactPage() {
             setForm={setForm}
             loading={loading}
             apiError={apiError}
+            telegramHandle={telegramHandle}
             onSubmit={handleSubmit}
           />
         )}
