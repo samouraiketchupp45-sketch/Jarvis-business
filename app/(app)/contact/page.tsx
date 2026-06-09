@@ -524,14 +524,16 @@ export default function ContactPage() {
 
   useEffect(() => {
     const user = getTelegramUser()
+    console.log('[ApplyaaBot] Telegram user détecté:', user)
     if (user) setTgUser(user)
   }, [])
 
-  const telegramHandle = tgUser?.username
-    ? `@${tgUser.username}`
+  const hasUsername  = Boolean(tgUser?.username)
+  const telegramHandle = hasUsername
+    ? `@${tgUser!.username}`
     : tgUser?.first_name
-    ? `${tgUser.first_name} (ID:${tgUser.id})`
-    : 'Non renseigné'
+    ? `${tgUser.first_name}${tgUser.id ? ` (ID: ${tgUser.id})` : ''}`
+    : 'Non identifié'
 
   const handleSubmit = async () => {
     setLoading(true)
@@ -542,12 +544,20 @@ export default function ContactPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           project_description: form.description,
-          activity: 'Pack Complet 1200€',
-          telegram: telegramHandle,
-          name: tgUser?.first_name ?? tgUser?.username ?? 'Prospect',
-          telegram_id: tgUser?.id,
-          budget: '1200',
-          pack: 'complet',
+          activity:  'Pack Complet 1200€',
+          service:   'Bot + Mini App + Panel Admin',
+          pack:      'Pack Complet 1200€',
+          budget:    '1200',
+          // Identité Telegram (colonne principale)
+          telegram:  hasUsername ? `@${tgUser!.username}` : (tgUser?.first_name ?? 'Non renseigné'),
+          name:      tgUser?.first_name ?? tgUser?.username ?? 'Prospect',
+          // Objet complet — stocké dans notes pour le CRM
+          tg_user: tgUser ? {
+            id:         tgUser.id,
+            username:   tgUser.username   ?? null,
+            first_name: tgUser.first_name ?? null,
+            last_name:  (tgUser as any).last_name ?? null,
+          } : null,
         }),
       })
 

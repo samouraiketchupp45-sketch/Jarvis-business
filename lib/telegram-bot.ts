@@ -27,38 +27,54 @@ export async function notifyNewProspect(p: {
   telegram:            string
   features?:           string | null
   wants_maintenance:   boolean
+  tg_user?:            { id?: number; username?: string; first_name?: string; last_name?: string } | null
 }) {
   if (!ADMIN_ID) return
-  const maintenance = p.wants_maintenance ? '✅ Oui — 50€/mois' : 'Non'
-  const features    = p.features ? p.features : 'Aucune spécifiée'
+
+  const tg_u = p.tg_user
+  const hasUsername = Boolean(tg_u?.username)
+
+  // Ligne identité du client
+  let identityLine = ''
+  if (tg_u) {
+    const fullName = [tg_u.first_name, tg_u.last_name].filter(Boolean).join(' ')
+    if (hasUsername) {
+      identityLine = `@${tg_u.username}`
+      if (fullName) identityLine += ` (${fullName})`
+      if (tg_u.id) identityLine += ` — ID: <code>${tg_u.id}</code>`
+    } else {
+      identityLine = fullName || 'Inconnu'
+      if (tg_u.id) identityLine += ` — ID: <code>${tg_u.id}</code>`
+      identityLine += '\n⚠️ Pas de @ public'
+    }
+  } else {
+    identityLine = p.telegram || 'Non renseigné'
+  }
+
+  const buttons: any[][] = [
+    [
+      { text: '✅ Accepter', callback_data: `accept_${p.id}` },
+      { text: '❌ Refuser',  callback_data: `refuse_${p.id}` },
+    ],
+  ]
+
+  if (hasUsername) {
+    buttons.push([{ text: `💬 Contacter @${tg_u!.username}`, url: `https://t.me/${tg_u!.username}` }])
+  }
+
+  buttons.push([{ text: '📊 Voir le CRM', web_app: { url: `${APP_URL}/crm` } }])
 
   await tg('sendMessage', {
     chat_id:    Number(ADMIN_ID),
     parse_mode: 'HTML',
     text:
-      `🔥 <b>Nouveau projet !</b>\n\n` +
-      `🏢 <b>Activité :</b>\n${p.activity}\n\n` +
+      `🔥 <b>Nouvelle demande — Pack Complet 1 200€</b>\n\n` +
+      `👤 <b>Client :</b>\n${identityLine}\n\n` +
       `📝 <b>Projet :</b>\n${p.project_description}\n\n` +
-      `📱 <b>@ Telegram :</b>\n${p.telegram}\n\n` +
-      `⚡ <b>Fonctionnalités :</b>\n${features}\n\n` +
       `━━━━━━━━━━━━━━━━━━━━\n` +
-      `🚀 <b>Pack demandé :</b> Pack Complet — 1 200€\n` +
-      `🌐 <b>Hébergement :</b> 15€/mois\n` +
-      `🛠 <b>Maintenance :</b> ${maintenance}`,
-    reply_markup: {
-      inline_keyboard: [
-        [
-          { text: '✅ Accepter',          callback_data: `accept_${p.id}` },
-          { text: '❌ Refuser',           callback_data: `refuse_${p.id}` },
-        ],
-        [
-          { text: '💬 Contacter le client', url: `https://t.me/${p.telegram.replace('@', '')}` },
-        ],
-        [
-          { text: '📊 Voir le CRM', web_app: { url: `${APP_URL}/crm` } },
-        ],
-      ],
-    },
+      `🚀 Pack Complet — 1 200€\n` +
+      `⏱ Livraison 48h à 7 jours`,
+    reply_markup: { inline_keyboard: buttons },
   })
 }
 

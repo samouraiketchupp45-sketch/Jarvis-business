@@ -63,7 +63,6 @@ export async function POST(req: NextRequest) {
 
   const {
     project_description,
-    // champs optionnels (ancienne version du formulaire ou futurs ajouts)
     activity,
     telegram,
     features,
@@ -71,6 +70,8 @@ export async function POST(req: NextRequest) {
     name,
     pack,
     budget,
+    service,
+    tg_user,  // { id, username, first_name, last_name } depuis Telegram WebApp SDK
   } = body
 
   if (!project_description || String(project_description).trim().length < 5) {
@@ -85,7 +86,24 @@ export async function POST(req: NextRequest) {
   }
 
   const activityVal = (activity ?? 'Pack Complet 1200€').trim()
+  const serviceVal  = (service  ?? 'Bot + Mini App + Panel Admin').trim()
   const telegramVal = (telegram ?? name ?? 'Non renseigné').trim()
+
+  // Stocker le profil Telegram complet dans notes (colonne jsonb existante)
+  const initialNotes: any[] = []
+  if (tg_user && typeof tg_user === 'object') {
+    initialNotes.push({
+      type:       'tg_user',
+      id:         tg_user.id         ?? null,
+      username:   tg_user.username   ?? null,
+      first_name: tg_user.first_name ?? null,
+      last_name:  tg_user.last_name  ?? null,
+      date:       new Date().toISOString(),
+    })
+    console.log('[PROSPECTS POST] tg_user capturé:', JSON.stringify(tg_user))
+  } else {
+    console.log('[PROSPECTS POST] Pas de tg_user fourni (formulaire hors Telegram ?)')
+  }
 
   const insertData: Record<string, unknown> = {
     activity:            activityVal,
@@ -94,11 +112,11 @@ export async function POST(req: NextRequest) {
     features:            features ? String(features).trim() : null,
     wants_maintenance:   Boolean(wants_maintenance),
     status:              'NOUVEAU',
-    notes:               [],
+    notes:               initialNotes,
     // colonnes rétrocompat (NOT NULL dans l'ancienne table)
-    name:                (name ?? telegram ?? 'Prospect').trim(),
+    name:                (name ?? tg_user?.first_name ?? 'Prospect').trim(),
     company:             activityVal,
-    service:             activityVal,
+    service:             serviceVal,
     budget:              budget ?? '1200',
     message:             project_description.trim(),
   }
@@ -123,6 +141,9 @@ export async function POST(req: NextRequest) {
   console.log('[PROSPECTS POST] ✅ Prospect enregistré — id:', data.id)
 
   // Notifier admin Telegram — AWAITÉ pour que Vercel ne coupe pas avant l'envoi
+  // Extraire infos tg depuis notes pour la notification
+  const tgNote = (data.notes as any[])?.find((n: any) => n.type === 'tg_user')
+
   try {
     await notifyNewProspect({
       id:                  data.id,
@@ -131,6 +152,7 @@ export async function POST(req: NextRequest) {
       telegram:            data.telegram,
       features:            data.features ?? null,
       wants_maintenance:   data.wants_maintenance,
+      tg_user:             tgNote ?? null,
     })
     console.log('[PROSPECTS POST] ✅ Notification Telegram envoyée')
   } catch (e: any) {

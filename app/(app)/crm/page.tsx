@@ -2,6 +2,22 @@
 import { useState, useEffect, useCallback } from 'react'
 import { RefreshCw, X, Send, Loader } from 'lucide-react'
 
+// Extraire les infos Telegram depuis notes jsonb
+function getTgInfo(p: any) {
+  const note = (p.notes ?? []).find((n: any) => n.type === 'tg_user')
+  const username   = note?.username   ?? null
+  const first_name = note?.first_name ?? null
+  const last_name  = note?.last_name  ?? null
+  const id         = note?.id         ?? null
+  const fullName   = [first_name, last_name].filter(Boolean).join(' ')
+  const hasHandle  = Boolean(username)
+  const display    = hasHandle
+    ? `@${username}`
+    : fullName || (id ? `ID: ${id}` : p.telegram || '—')
+  const tgUrl      = hasHandle ? `https://t.me/${username}` : null
+  return { username, first_name, last_name, id, fullName, hasHandle, display, tgUrl }
+}
+
 const STATUS_CONFIG: Record<string, { label: string; color: string; emoji: string }> = {
   NOUVEAU:   { label: 'Nouveau',      color: '#00cfff', emoji: '🆕' },
   CONTACTE:  { label: 'Contacté',     color: '#ffd700', emoji: '💬' },
@@ -88,13 +104,25 @@ export default function CrmPage() {
           </div>
         ) : displayed.map(p => {
           const cfg = STATUS_CONFIG[p.status] ?? STATUS_CONFIG.NOUVEAU
+          const tgi = getTgInfo(p)
           return (
             <div key={p.id} className="card p-4 cursor-pointer active:scale-[.99] transition-transform"
               onClick={() => setSelected(p)}>
               <div className="flex items-start justify-between mb-2">
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-sm text-white">{p.activity}</p>
-                  <p className="text-xs text-white/40 mt-0.5">{p.telegram}</p>
+                  <p className="font-bold text-sm text-white">{p.activity ?? 'Pack Complet 1200€'}</p>
+                  {/* Identité Telegram */}
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    {tgi.hasHandle ? (
+                      <p className="text-xs font-mono text-cyan-400">{tgi.display}</p>
+                    ) : (
+                      <p className="text-xs text-white/30">
+                        {tgi.display}
+                        {!tgi.hasHandle && <span className="ml-1 text-yellow-500/60">· pas de @</span>}
+                      </p>
+                    )}
+                    {tgi.id && <span className="text-[9px] text-white/20">ID {tgi.id}</span>}
+                  </div>
                 </div>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ml-2"
                   style={{ background: `${cfg.color}15`, color: cfg.color, border: `1px solid ${cfg.color}30` }}>
@@ -103,10 +131,7 @@ export default function CrmPage() {
               </div>
               <p className="text-xs text-white/50 line-clamp-2 mb-2">{p.project_description}</p>
               <div className="flex items-center gap-3 text-[10px] text-white/25">
-                {p.wants_maintenance && (
-                  <span className="text-yellow-400/60">🛠 Maintenance</span>
-                )}
-                <span>{new Date(p.created_at).toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'numeric' })}</span>
+                <span>{new Date(p.created_at).toLocaleDateString('fr-FR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' })}</span>
               </div>
             </div>
           )
@@ -114,7 +139,9 @@ export default function CrmPage() {
       </div>
 
       {/* Modal détail */}
-      {selected && (
+      {selected && (() => {
+        const tgi = getTgInfo(selected)
+        return (
         <div className="fixed inset-0 z-50 flex items-end justify-center"
           style={{ background: 'rgba(0,0,0,.85)', backdropFilter: 'blur(8px)' }}>
           <div className="w-full max-w-lg rounded-t-3xl max-h-[92vh] overflow-y-auto"
@@ -123,7 +150,10 @@ export default function CrmPage() {
               style={{ background: '#050f24', borderColor: 'rgba(0,207,255,.1)' }}>
               <div>
                 <p className="font-black text-white">{selected.activity}</p>
-                <p className="text-xs text-white/40">{selected.telegram}</p>
+                <p className="text-xs mt-0.5" style={{ color: tgi.hasHandle ? '#00cfff' : 'rgba(255,255,255,0.35)' }}>
+                  {tgi.display}
+                  {!tgi.hasHandle && tgi.id && <span className="text-white/25 ml-1">· ID {tgi.id}</span>}
+                </p>
               </div>
               <button onClick={() => setSelected(null)} className="text-white/40"><X size={20} /></button>
             </div>
@@ -176,11 +206,23 @@ export default function CrmPage() {
               </div>
 
               {/* Contacter */}
-              <a href={`https://t.me/${selected.telegram?.replace('@','')}`} target="_blank" rel="noreferrer">
-                <button className="btn-primary w-full justify-center">
-                  💬 Contacter sur Telegram
-                </button>
-              </a>
+              {tgi.hasHandle ? (
+                <a href={tgi.tgUrl!} target="_blank" rel="noreferrer">
+                  <button className="btn-primary w-full justify-center">
+                    💬 Contacter {tgi.display}
+                  </button>
+                </a>
+              ) : (
+                <div className="rounded-2xl p-3 text-center"
+                  style={{ background: 'rgba(255,200,0,0.06)', border: '1px solid rgba(255,200,0,0.2)' }}>
+                  <p className="text-xs font-bold text-yellow-400 mb-1">⚠️ Pas de @ Telegram public</p>
+                  <p className="text-[11px] text-white/40 leading-relaxed">
+                    {tgi.id
+                      ? `ID Telegram : ${tgi.id} — demandez-lui de vous écrire directement.`
+                      : 'Cet utilisateur n\'a pas de @ public. Demandez-lui de vous écrire en premier.'}
+                  </p>
+                </div>
+              )}
 
               {/* Note */}
               <div>
@@ -195,11 +237,12 @@ export default function CrmPage() {
               </div>
 
               {/* Historique notes */}
-              {selected.notes?.length > 0 && (
+              {/* Historique notes (on exclut les notes internes tg_user) */}
+              {(selected.notes?.filter((n: any) => n.type !== 'tg_user') ?? []).length > 0 && (
                 <div>
                   <p className="label mb-2">Historique</p>
                   <div className="space-y-2">
-                    {[...selected.notes].reverse().map((n: any, i: number) => (
+                    {[...selected.notes.filter((n: any) => n.type !== 'tg_user')].reverse().map((n: any, i: number) => (
                       <div key={i} className="rounded-xl px-3 py-2"
                         style={{ background: 'rgba(0,207,255,.05)', border: '1px solid rgba(0,207,255,.1)' }}>
                         <p className="text-xs text-white/70">{n.text}</p>
@@ -212,7 +255,8 @@ export default function CrmPage() {
             </div>
           </div>
         </div>
-      )}
+        )
+      })()}
     </div>
   )
 }
