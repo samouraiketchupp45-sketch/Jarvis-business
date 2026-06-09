@@ -71,7 +71,8 @@ export async function POST(req: NextRequest) {
     pack,
     budget,
     service,
-    tg_user,  // { id, username, first_name, last_name } depuis Telegram WebApp SDK
+    tg_user,        // { id, username, first_name, last_name } depuis Telegram WebApp SDK
+    wants_hosting,  // boolean
   } = body
 
   if (!project_description || String(project_description).trim().length < 5) {
@@ -89,8 +90,9 @@ export async function POST(req: NextRequest) {
   const serviceVal  = (service  ?? 'Bot + Mini App + Panel Admin').trim()
   const telegramVal = (telegram ?? name ?? 'Non renseigné').trim()
 
-  // Stocker le profil Telegram complet dans notes (colonne jsonb existante)
+  // Stocker profil Telegram + options dans notes JSONB
   const initialNotes: any[] = []
+
   if (tg_user && typeof tg_user === 'object') {
     initialNotes.push({
       type:       'tg_user',
@@ -102,8 +104,16 @@ export async function POST(req: NextRequest) {
     })
     console.log('[PROSPECTS POST] tg_user capturé:', JSON.stringify(tg_user))
   } else {
-    console.log('[PROSPECTS POST] Pas de tg_user fourni (formulaire hors Telegram ?)')
+    console.log('[PROSPECTS POST] Pas de tg_user fourni')
   }
+
+  // Options choisies par le client
+  initialNotes.push({
+    type:        'options',
+    hosting:     Boolean(wants_hosting),
+    maintenance: Boolean(wants_maintenance),
+    date:        new Date().toISOString(),
+  })
 
   const insertData: Record<string, unknown> = {
     activity:            activityVal,
@@ -153,6 +163,7 @@ export async function POST(req: NextRequest) {
       features:            data.features ?? null,
       wants_maintenance:   data.wants_maintenance,
       tg_user:             tgNote ?? null,
+      notes:               data.notes ?? [],
     })
     console.log('[PROSPECTS POST] ✅ Notification Telegram envoyée')
   } catch (e: any) {

@@ -171,22 +171,31 @@ export default function CrmPage() {
                     <p className="text-sm text-white/70 leading-relaxed">{selected.features}</p>
                   </div>
                 )}
-                <div className="flex items-center gap-4 pt-2 border-t" style={{ borderColor: 'rgba(255,255,255,.06)' }}>
-                  <div>
-                    <p className="text-[10px] text-white/30 uppercase tracking-widest">Pack</p>
-                    <p className="text-sm font-bold text-cyan-400">1 200€</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-white/30 uppercase tracking-widest">Hébergement</p>
-                    <p className="text-sm font-bold text-white">15€/mois</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] text-white/30 uppercase tracking-widest">Maintenance</p>
-                    <p className={`text-sm font-bold ${selected.wants_maintenance ? 'text-yellow-400' : 'text-white/30'}`}>
-                      {selected.wants_maintenance ? '50€/mois' : 'Non'}
-                    </p>
-                  </div>
-                </div>
+                {(() => {
+                  const optNote = (selected.notes ?? []).find((n: any) => n.type === 'options')
+                  const hosting     = optNote?.hosting     ?? false
+                  const maintenance = optNote?.maintenance ?? selected.wants_maintenance ?? false
+                  return (
+                    <div className="flex items-center gap-4 pt-2 border-t" style={{ borderColor: 'rgba(255,255,255,.06)' }}>
+                      <div>
+                        <p className="text-[10px] text-white/30 uppercase tracking-widest">Pack</p>
+                        <p className="text-sm font-bold text-cyan-400">1 200€</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-white/30 uppercase tracking-widest">Hébergement</p>
+                        <p className={`text-sm font-bold ${hosting ? 'text-blue-400' : 'text-white/30'}`}>
+                          {hosting ? '15€/mois' : 'Non'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-white/30 uppercase tracking-widest">Maintenance</p>
+                        <p className={`text-sm font-bold ${maintenance ? 'text-purple-400' : 'text-white/30'}`}>
+                          {maintenance ? '50€/mois' : 'Non'}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
 
               {/* Statut */}

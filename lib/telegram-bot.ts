@@ -28,6 +28,7 @@ export async function notifyNewProspect(p: {
   features?:           string | null
   wants_maintenance:   boolean
   tg_user?:            { id?: number; username?: string; first_name?: string; last_name?: string } | null
+  notes?:              any[]
 }) {
   if (!ADMIN_ID) return
 
@@ -64,15 +65,24 @@ export async function notifyNewProspect(p: {
 
   buttons.push([{ text: '📊 Voir le CRM', web_app: { url: `${APP_URL}/crm` } }])
 
+  const optNote = (p.notes ?? []).find((n: any) => n.type === 'options')
+  const wantsHosting     = optNote?.hosting     ?? p.wants_maintenance ?? false
+  const wantsMaintenance = optNote?.maintenance ?? p.wants_maintenance ?? false
+
+  const optLines: string[] = [`🚀 Pack Complet — <b>1 200€</b>`]
+  if (wantsHosting)     optLines.push(`🌐 Hébergement — <b>+15€/mois</b>`)
+  if (wantsMaintenance) optLines.push(`🛠 Maintenance  — <b>+50€/mois</b>`)
+  if (!wantsHosting && !wantsMaintenance) optLines.push(`(aucune option mensuelle)`)
+
   await tg('sendMessage', {
     chat_id:    Number(ADMIN_ID),
     parse_mode: 'HTML',
     text:
-      `🔥 <b>Nouvelle demande — Pack Complet 1 200€</b>\n\n` +
+      `🔥 <b>Nouvelle demande !</b>\n\n` +
       `👤 <b>Client :</b>\n${identityLine}\n\n` +
       `📝 <b>Projet :</b>\n${p.project_description}\n\n` +
       `━━━━━━━━━━━━━━━━━━━━\n` +
-      `🚀 Pack Complet — 1 200€\n` +
+      optLines.join('\n') + `\n` +
       `⏱ Livraison 48h à 7 jours`,
     reply_markup: { inline_keyboard: buttons },
   })

@@ -176,7 +176,7 @@ function PackCard({ onContinue }: { onContinue: () => void }) {
 }
 
 // ─── Form ─────────────────────────────────────────────────────────────────────
-type FormData = { description: string }
+type FormData = { description: string; hosting: boolean; maintenance: boolean }
 
 function ContactForm({
   form, setForm, loading, apiError, telegramHandle, onSubmit,
@@ -229,13 +229,14 @@ function ContactForm({
 
       {/* Fields */}
       <div className="space-y-4 mb-6">
+        {/* Description */}
         <div>
           <label className="text-xs font-semibold text-white/50 uppercase tracking-widest mb-1.5 block">
             Décrivez votre projet <span className="text-blue-400">*</span>
           </label>
           <textarea
             rows={4}
-            placeholder="Ex: Je vends du CBD, j'ai besoin d'une boutique Telegram avec paiement en ligne et un bot pour les commandes…"
+            placeholder="Ex: Je vends du CBD, j'ai besoin d'une boutique Telegram avec un bot pour les commandes…"
             value={form.description}
             onChange={e => setForm({ ...form, description: e.target.value })}
             className="w-full px-4 py-3 rounded-2xl text-sm text-white placeholder-white/25 outline-none resize-none"
@@ -246,6 +247,104 @@ function ContactForm({
           />
           <p className="text-[10px] text-white/25 mt-1">{form.description.length} / 500 caractères</p>
         </div>
+
+        {/* Options hébergement + maintenance */}
+        <div>
+          <label className="text-xs font-semibold text-white/50 uppercase tracking-widest mb-2 block">
+            Options supplémentaires
+          </label>
+          <div className="space-y-2">
+            {/* Hébergement */}
+            <button
+              type="button"
+              onClick={() => setForm({ ...form, hosting: !form.hosting })}
+              className="w-full flex items-center gap-3 p-3 rounded-2xl transition-all text-left"
+              style={{
+                background: form.hosting ? 'rgba(59,130,246,0.12)' : 'rgba(255,255,255,0.03)',
+                border: form.hosting ? '1px solid rgba(59,130,246,0.45)' : '1px solid rgba(255,255,255,0.08)',
+              }}
+            >
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-lg"
+                style={{ background: form.hosting ? 'rgba(59,130,246,0.2)' : 'rgba(255,255,255,0.05)' }}>
+                🌐
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-white">Hébergement serveur</p>
+                <p className="text-[11px] text-white/40">Domaine configuré · SSL · Serveur dédié</p>
+              </div>
+              <div className="flex-shrink-0 text-right">
+                <p className="text-sm font-black" style={{ color: form.hosting ? '#60a5fa' : 'rgba(255,255,255,0.25)' }}>
+                  15€<span className="text-[10px] font-normal">/mois</span>
+                </p>
+                <div className="mt-1 w-8 h-4 rounded-full relative ml-auto transition-all"
+                  style={{ background: form.hosting ? '#3b82f6' : 'rgba(255,255,255,0.1)' }}>
+                  <div className="absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all"
+                    style={{ left: form.hosting ? 'calc(100% - 14px)' : '2px' }} />
+                </div>
+              </div>
+            </button>
+
+            {/* Maintenance */}
+            <button
+              type="button"
+              onClick={() => setForm({ ...form, maintenance: !form.maintenance })}
+              className="w-full flex items-center gap-3 p-3 rounded-2xl transition-all text-left"
+              style={{
+                background: form.maintenance ? 'rgba(168,85,247,0.12)' : 'rgba(255,255,255,0.03)',
+                border: form.maintenance ? '1px solid rgba(168,85,247,0.45)' : '1px solid rgba(255,255,255,0.08)',
+              }}
+            >
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-lg"
+                style={{ background: form.maintenance ? 'rgba(168,85,247,0.2)' : 'rgba(255,255,255,0.05)' }}>
+                🛠
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-white">Maintenance mensuelle</p>
+                <p className="text-[11px] text-white/40">Mises à jour · Support prioritaire · Sauvegardes</p>
+              </div>
+              <div className="flex-shrink-0 text-right">
+                <p className="text-sm font-black" style={{ color: form.maintenance ? '#a855f7' : 'rgba(255,255,255,0.25)' }}>
+                  50€<span className="text-[10px] font-normal">/mois</span>
+                </p>
+                <div className="mt-1 w-8 h-4 rounded-full relative ml-auto transition-all"
+                  style={{ background: form.maintenance ? '#a855f7' : 'rgba(255,255,255,0.1)' }}>
+                  <div className="absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all"
+                    style={{ left: form.maintenance ? 'calc(100% - 14px)' : '2px' }} />
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Récap prix total */}
+        {(form.hosting || form.maintenance) && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-3 rounded-2xl"
+            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
+          >
+            <p className="text-[10px] text-white/30 uppercase tracking-widest mb-2">Récapitulatif</p>
+            <div className="space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="text-white/60">Pack Complet</span>
+                <span className="font-bold text-white">1 200€</span>
+              </div>
+              {form.hosting && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-white/60">Hébergement</span>
+                  <span className="font-bold text-blue-400">+15€/mois</span>
+                </div>
+              )}
+              {form.maintenance && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-white/60">Maintenance</span>
+                  <span className="font-bold text-purple-400">+50€/mois</span>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
       </div>
 
       {/* Submit */}
@@ -519,7 +618,7 @@ export default function ContactPage() {
   const [step, setStep]         = useState<Step>('pack')
   const [loading, setLoading]   = useState(false)
   const [apiError, setApiError] = useState<string | null>(null)
-  const [form, setForm]         = useState<FormData>({ description: '' })
+  const [form, setForm]         = useState<FormData>({ description: '', hosting: false, maintenance: false })
   const [tgUser, setTgUser]     = useState<{ username?: string; first_name?: string; id?: number } | null>(null)
 
   useEffect(() => {
@@ -544,10 +643,12 @@ export default function ContactPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           project_description: form.description,
-          activity:  'Pack Complet 1200€',
-          service:   'Bot + Mini App + Panel Admin',
-          pack:      'Pack Complet 1200€',
-          budget:    '1200',
+          activity:          'Pack Complet 1200€',
+          service:           'Bot + Mini App + Panel Admin',
+          pack:              'Pack Complet 1200€',
+          budget:            '1200',
+          wants_hosting:     form.hosting,
+          wants_maintenance: form.maintenance,
           // Identité Telegram (colonne principale)
           telegram:  hasUsername ? `@${tgUser!.username}` : (tgUser?.first_name ?? 'Non renseigné'),
           name:      tgUser?.first_name ?? tgUser?.username ?? 'Prospect',
