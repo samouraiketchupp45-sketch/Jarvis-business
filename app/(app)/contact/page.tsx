@@ -8,7 +8,6 @@ const PACK_ITEMS = [
   { icon: '🤖', text: 'Bot Telegram complet (commandes, menus, catalogue)' },
   { icon: '📱', text: 'Mini App premium avec design sur-mesure' },
   { icon: '⚙️', text: 'Panel Admin web (commandes, produits, clients)' },
-  { icon: '💳', text: 'Intégration paiement (Stripe / PayPal / Crypto)' },
   { icon: '🚀', text: 'Mise en ligne complète + nom de domaine configuré' },
   { icon: '🔔', text: 'Notifications automatiques clients en temps réel' },
   { icon: '📊', text: 'Statistiques & analytics intégrés' },
