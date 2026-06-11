@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { tg, setCommands } from '@/lib/telegram-bot'
+import { createServiceClient } from '@/lib/supabase'
+import { verifyWebhookSecret } from '@/lib/security'
 
 export const dynamic = 'force-dynamic'
 
@@ -11,7 +13,28 @@ function parseCallback(data: string, prefix: string): string | null {
   return data.slice(prefix.length)
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+// Mise à jour directe du statut d'un prospect (service role), sans repasser par
+// l'API publique. Réservé aux appels webhook déjà authentifiés par le secret.
+async function setProspectStatus(id: string, status: string, note?: string) {
+  if (!UUID_RE.test(id)) return
+  const sb = createServiceClient()
+  if (!sb) return
+  const updates: Record<string, unknown> = { status, updated_at: new Date().toISOString() }
+  if (note) {
+    const { data: cur } = await sb.from('jrv_prospects').select('notes').eq('id', id).single()
+    updates.notes = [ ...((cur?.notes ?? []) as any[]), { text: note, date: new Date().toISOString() } ]
+  }
+  await sb.from('jrv_prospects').update(updates).eq('id', id)
+}
+
 export async function POST(req: NextRequest) {
+  // 🔒 Anti-spoofing : Telegram envoie le secret configuré via setWebhook
+  if (!verifyWebhookSecret(req)) {
+    return NextResponse.json({ ok: false }, { status: 401 })
+  }
+
   let update: any
   try { update = await req.json() } catch { return NextResponse.json({ ok: true }) }
 
@@ -125,38 +148,31 @@ export async function POST(req: NextRequest) {
     let answered = false
 
     // Accepter un projet
+    // Les actions admin (accept/refuse/relance) ne sont déclenchables que par
+    // l'administrateur — l'utilisateur du callback est vérifié.
+    const fromId = String(cq.from?.id ?? '')
+    const isAdminCallback = ADMIN_ID && fromId === ADMIN_ID
+
     const acceptId = parseCallback(data, 'accept_')
     if (acceptId) {
-      await fetch(`${APP_URL}/api/prospects`, {
-        method:  'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ id: acceptId, status: 'ACCEPTE' }),
-      }).catch(() => {})
-      await tg('answerCallbackQuery', { callback_query_id: cq.id, text: '✅ Projet accepté !' })
+      if (isAdminCallback) await setProspectStatus(acceptId, 'ACCEPTE')
+      await tg('answerCallbackQuery', { callback_query_id: cq.id, text: isAdminCallback ? '✅ Projet accepté !' : 'Accès refusé', show_alert: !isAdminCallback })
       answered = true
     }
 
     // Refuser un projet
     const refuseId = parseCallback(data, 'refuse_')
     if (refuseId) {
-      await fetch(`${APP_URL}/api/prospects`, {
-        method:  'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ id: refuseId, status: 'REFUSE' }),
-      }).catch(() => {})
-      await tg('answerCallbackQuery', { callback_query_id: cq.id, text: '❌ Projet refusé' })
+      if (isAdminCallback) await setProspectStatus(refuseId, 'REFUSE')
+      await tg('answerCallbackQuery', { callback_query_id: cq.id, text: isAdminCallback ? '❌ Projet refusé' : 'Accès refusé', show_alert: !isAdminCallback })
       answered = true
     }
 
     // Relance faite
     const relanceId = parseCallback(data, 'relance_done_')
     if (relanceId) {
-      await fetch(`${APP_URL}/api/prospects`, {
-        method:  'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ id: relanceId, status: 'CONTACTE', note: 'Relance effectuée' }),
-      }).catch(() => {})
-      await tg('answerCallbackQuery', { callback_query_id: cq.id, text: '✅ Relance marquée' })
+      if (isAdminCallback) await setProspectStatus(relanceId, 'CONTACTE', 'Relance effectuée')
+      await tg('answerCallbackQuery', { callback_query_id: cq.id, text: isAdminCallback ? '✅ Relance marquée' : 'Accès refusé', show_alert: !isAdminCallback })
       answered = true
     }
 

@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { RefreshCw } from 'lucide-react'
+import { adminFetch } from '@/lib/client-auth'
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; emoji: string }> = {
   NOUVEAU:  { label: 'Nouveau',  color: '#00cfff', emoji: '🆕' },
@@ -24,9 +25,9 @@ export default function DashboardPage() {
     setLoading(true)
     try {
       const [sRes, pRes, cRes] = await Promise.all([
-        fetch('/api/prospects?stats=1'),
-        fetch('/api/prospects'),
-        fetch('/api/clients'),
+        adminFetch('/api/prospects?stats=1'),
+        adminFetch('/api/prospects'),
+        adminFetch('/api/clients'),
       ])
       if (sRes.ok) setStats(await sRes.json())
       if (pRes.ok) setProspects(await pRes.json())

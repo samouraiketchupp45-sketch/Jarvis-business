@@ -1,5 +1,6 @@
-// Endpoint de migration one-shot — s'auto-détruit après succès
-import { NextResponse } from 'next/server'
+// Endpoint de migration one-shot — RÉSERVÉ ADMIN
+import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/security'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,7 +23,10 @@ async function sql(query: string): Promise<{ ok: boolean; error?: string }> {
   return { ok: true }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const auth = requireAdmin(req)
+  if (!auth.ok) return auth.response
+
   if (!SUPABASE_URL || !SERVICE_KEY) {
     return NextResponse.json({ error: 'Env vars manquantes' }, { status: 500 })
   }
@@ -61,9 +65,11 @@ export async function GET() {
     // Index
     `CREATE INDEX IF NOT EXISTS idx_jrv_prospects_status ON jrv_prospects(status)`,
     `CREATE INDEX IF NOT EXISTS idx_jrv_prospects_created ON jrv_prospects(created_at DESC)`,
-    // Désactiver RLS
-    `ALTER TABLE jrv_prospects DISABLE ROW LEVEL SECURITY`,
-    `ALTER TABLE jrv_clients DISABLE ROW LEVEL SECURITY`,
+    // Activer RLS (deny par défaut — accès uniquement via service_role/API)
+    `ALTER TABLE jrv_prospects ENABLE ROW LEVEL SECURITY`,
+    `ALTER TABLE jrv_clients ENABLE ROW LEVEL SECURITY`,
+    `REVOKE ALL ON jrv_prospects FROM anon, authenticated`,
+    `REVOKE ALL ON jrv_clients FROM anon, authenticated`,
     // Recharger schema PostgREST
     `NOTIFY pgrst, 'reload schema'`,
   ]

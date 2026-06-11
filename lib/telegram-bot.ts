@@ -114,7 +114,15 @@ export async function sendRelanceReminder(p: { telegram: string; activity: strin
 }
 
 export async function setWebhook(url: string) {
-  return tg('setWebhook', { url, allowed_updates: ['message', 'callback_query'], drop_pending_updates: true })
+  // secret_token : Telegram le renverra dans l'en-tête X-Telegram-Bot-Api-Secret-Token,
+  // ce qui permet au webhook de rejeter les requêtes falsifiées.
+  const secret_token = (process.env.WEBHOOK_SECRET ?? '').trim() || undefined
+  return tg('setWebhook', {
+    url,
+    allowed_updates: ['message', 'callback_query'],
+    drop_pending_updates: true,
+    ...(secret_token ? { secret_token } : {}),
+  })
 }
 
 export async function setCommands() {

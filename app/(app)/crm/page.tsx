@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { RefreshCw, X, Send, Loader } from 'lucide-react'
+import { adminFetch } from '@/lib/client-auth'
 
 // Extraire les infos Telegram depuis notes jsonb
 function getTgInfo(p: any) {
@@ -37,7 +38,7 @@ export default function CrmPage() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    fetch('/api/prospects').then(r => r.ok ? r.json() : [])
+    adminFetch('/api/prospects').then(r => r.ok ? r.json() : [])
       .then(d => setProspects(Array.isArray(d) ? d : []))
       .catch(() => setProspects([]))
       .finally(() => setLoading(false))
@@ -46,7 +47,7 @@ export default function CrmPage() {
   useEffect(() => { load() }, [load])
 
   async function updateStatus(id: string, status: string) {
-    await fetch('/api/prospects', {
+    await adminFetch('/api/prospects', {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, status }),
     }).catch(() => {})
@@ -57,7 +58,7 @@ export default function CrmPage() {
   async function addNote() {
     if (!note.trim() || !selected) return
     setSaving(true)
-    await fetch('/api/prospects', {
+    await adminFetch('/api/prospects', {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: selected.id, note: note.trim() }),
     }).catch(() => {})

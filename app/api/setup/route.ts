@@ -1,21 +1,27 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
+import { requireAdmin } from '@/lib/security'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // 🔒 Diagnostic réservé à l'admin (ne jamais exposer l'état des secrets publiquement)
+  const auth = requireAdmin(req)
+  if (!auth.ok) return auth.response
+
   const url     = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anon    = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   const service = process.env.SUPABASE_SERVICE_ROLE_KEY
 
   const checks: Record<string, any> = {
     env: {
-      NEXT_PUBLIC_SUPABASE_URL:      url     ? `✅ défini (${url.substring(0, 35)}...)` : '❌ MANQUANT',
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: anon    ? '✅ défini'                               : '❌ MANQUANT',
-      SUPABASE_SERVICE_ROLE_KEY:     service ? '✅ défini'                               : '❌ MANQUANT',
-      TELEGRAM_BOT_TOKEN:            process.env.TELEGRAM_BOT_TOKEN ? '✅ défini'        : '❌ MANQUANT',
-      ADMIN_TELEGRAM_ID:             process.env.ADMIN_TELEGRAM_ID
-        ? `✅ ${process.env.ADMIN_TELEGRAM_ID}` : '❌ MANQUANT',
+      // On indique seulement présent/absent — jamais la valeur ni l'ID admin.
+      NEXT_PUBLIC_SUPABASE_URL:      url     ? '✅ défini' : '❌ MANQUANT',
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: anon    ? '✅ défini' : '❌ MANQUANT',
+      SUPABASE_SERVICE_ROLE_KEY:     service ? '✅ défini' : '❌ MANQUANT',
+      TELEGRAM_BOT_TOKEN:            process.env.TELEGRAM_BOT_TOKEN ? '✅ défini' : '❌ MANQUANT',
+      ADMIN_TELEGRAM_ID:             process.env.ADMIN_TELEGRAM_ID ? '✅ défini' : '❌ MANQUANT',
+      WEBHOOK_SECRET:                process.env.WEBHOOK_SECRET ? '✅ défini' : '❌ MANQUANT',
     },
   }
 

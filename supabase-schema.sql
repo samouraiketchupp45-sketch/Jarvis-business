@@ -1,6 +1,7 @@
 -- ═══════════════════════════════════════════════════════════
 -- JARVIS BUSINESS — Schéma Supabase v2
--- Coller dans : https://supabase.com/dashboard/project/rgjvkxenwtnfllakjvza/sql/new
+-- Coller dans le SQL Editor du projet Supabase DÉDIÉ à ApplyBot/JARVIS.
+-- ⚠️ NE PAS utiliser le projet partagé d'Exoticz/ConnectBot — isolation stricte.
 -- ═══════════════════════════════════════════════════════════
 
 -- ── 1. Prospects (demandes de projets) ───────────────────────────────────────
@@ -51,9 +52,14 @@ CREATE INDEX IF NOT EXISTS idx_jrv_prospects_status  ON jrv_prospects(status);
 CREATE INDEX IF NOT EXISTS idx_jrv_prospects_created ON jrv_prospects(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_jrv_clients_active    ON jrv_clients(active);
 
--- ── 4. Désactiver RLS ─────────────────────────────────────────────────────────
-ALTER TABLE jrv_prospects DISABLE ROW LEVEL SECURITY;
-ALTER TABLE jrv_clients   DISABLE ROW LEVEL SECURITY;
+-- ── 4. Activer RLS (deny par défaut) ──────────────────────────────────────────
+-- Aucune policy => aucun accès via la clé anon (publique). Les lectures/écritures
+-- passent uniquement par les routes API serveur (service_role, qui bypass la RLS)
+-- APRÈS vérification de l'identité admin Telegram.
+ALTER TABLE jrv_prospects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE jrv_clients   ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON jrv_prospects FROM anon, authenticated;
+REVOKE ALL ON jrv_clients   FROM anon, authenticated;
 
 -- ── 5. Rafraîchir le cache PostgREST ─────────────────────────────────────────
 NOTIFY pgrst, 'reload schema';
