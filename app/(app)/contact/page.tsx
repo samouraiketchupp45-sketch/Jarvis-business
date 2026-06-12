@@ -61,8 +61,8 @@ function AnimatedCheck() {
 }
 
 // ─── Écran succès ─────────────────────────────────────────────────────────────
-const TG_ME = 'ApplyaaBot'
-const TG_MSG = encodeURIComponent('Bonjour, je viens de faire une demande sur ApplyaaBot concernant le Pack Complet à 1200€.')
+const TG_ME = 'Aapply_bot'
+const TG_MSG = encodeURIComponent('Bonjour, je viens de faire une demande sur Aapply_bot concernant le Pack Complet à 1200€.')
 const TG_URL = `https://t.me/${TG_ME}?text=${TG_MSG}`
 
 function SuccessScreen({ username }: { username?: string }) {

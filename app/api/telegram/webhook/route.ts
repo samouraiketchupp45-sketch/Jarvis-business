@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
               [{ text: '🚀 Pack Complet — 1 200€',  web_app: { url: `${APP_URL}/pack` } }],
               [{ text: '📂 Voir nos réalisations',   web_app: { url: `${APP_URL}/portfolio` } }],
               [{ text: '💼 Commencer mon projet',    web_app: { url: `${APP_URL}/contact` } }],
-              [{ text: '📞 Nous contacter',          url: 'https://t.me/ApplyJarvis' }],
+              [{ text: '📞 Nous contacter',          url: 'https://t.me/Aapply_bot' }],
             ],
           },
         })
