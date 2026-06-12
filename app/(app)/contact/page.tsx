@@ -61,8 +61,8 @@ function AnimatedCheck() {
 }
 
 // ─── Écran succès ─────────────────────────────────────────────────────────────
-const TG_ME = 'Aapply_bot'
-const TG_MSG = encodeURIComponent('Bonjour, je viens de faire une demande sur Aapply_bot concernant le Pack Complet à 1200€.')
+const TG_ME = 'Applybots'
+const TG_MSG = encodeURIComponent('Bonjour, je viens de faire une demande concernant le Pack Complet à 1200€.')
 const TG_URL = `https://t.me/${TG_ME}?text=${TG_MSG}`
 
 function SuccessScreen({ username }: { username?: string }) {
@@ -121,8 +121,12 @@ function SuccessScreen({ username }: { username?: string }) {
         </div>
       </motion.div>
 
-      {/* CTA Telegram */}
+      {/* CTA Telegram — ouvre via l'API Telegram dans la mini-app, sinon lien classique */}
       <motion.a href={TG_URL} target="_blank" rel="noopener noreferrer"
+        onClick={(e) => {
+          const wa = (window as unknown as { Telegram?: { WebApp?: { openTelegramLink?: (u: string) => void } } }).Telegram?.WebApp
+          if (wa?.openTelegramLink) { e.preventDefault(); wa.openTelegramLink(`https://t.me/${TG_ME}`) }
+        }}
         initial={{ opacity: 0, y: 14, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ delay: 0.95, type:'spring', stiffness:300, damping:22 }}
         whileHover={{ scale:1.03 }} whileTap={{ scale:0.97 }}
