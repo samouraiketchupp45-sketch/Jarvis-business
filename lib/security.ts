@@ -101,6 +101,25 @@ export function requireAdmin(req: Request):
   return { ok: true, user: v.user }
 }
 
+/**
+ * Auth pour les routes d'exploitation (setup-webhook, migrate, init-db, setup).
+ * Accepte SOIT l'admin via initData Telegram, SOIT un paramètre ?secret=WEBHOOK_SECRET
+ * (secret fort) — utilisable depuis un navigateur pour le bootstrap.
+ */
+export function requireSetupAuth(req: Request):
+  | { ok: true }
+  | { ok: false; response: NextResponse } {
+  const secret = process.env.WEBHOOK_SECRET
+  if (secret) {
+    const url = new URL(req.url)
+    const provided = url.searchParams.get('secret') ?? ''
+    if (provided && safeEqual(provided, secret)) return { ok: true }
+  }
+  const admin = requireAdmin(req)
+  if (admin.ok) return { ok: true }
+  return { ok: false, response: admin.response }
+}
+
 // ── Validation du webhook Telegram (secret token) ────────────────────────────
 export function verifyWebhookSecret(req: Request): boolean {
   const secret = process.env.WEBHOOK_SECRET

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase'
-import { requireAdmin } from '@/lib/security'
+import { requireSetupAuth } from '@/lib/security'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
   // 🔒 Diagnostic réservé à l'admin (ne jamais exposer l'état des secrets publiquement)
-  const auth = requireAdmin(req)
+  const auth = requireSetupAuth(req)
   if (!auth.ok) return auth.response
 
   const url     = process.env.NEXT_PUBLIC_SUPABASE_URL

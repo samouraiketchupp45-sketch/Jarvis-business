@@ -1,6 +1,6 @@
 // Endpoint de migration one-shot — RÉSERVÉ ADMIN
 import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/security'
+import { requireSetupAuth } from '@/lib/security'
 
 export const dynamic = 'force-dynamic'
 
@@ -24,7 +24,7 @@ async function sql(query: string): Promise<{ ok: boolean; error?: string }> {
 }
 
 export async function GET(req: NextRequest) {
-  const auth = requireAdmin(req)
+  const auth = requireSetupAuth(req)
   if (!auth.ok) return auth.response
 
   if (!SUPABASE_URL || !SERVICE_KEY) {
